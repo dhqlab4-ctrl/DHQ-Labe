@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Isfand Yar Bukhari District Hospital — Laboratory System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F7F6; --surface:#fff; --ink:#16302E; --header:#12313B;
+    --accent:#0E7C86; --accent-soft:#EAF4F2; --border:#DDE5E3;
+    --muted:#5B6B6E; --muted2:#8FA3A1; --bad:#C1440E; --bad-soft:#FDF1E7;
+    --bad-fg:#B4590E; --good:#2F7D5D; --good-soft:#E4F1EB; --barfill:#BFE3D9;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:'Inter',sans-serif; background:var(--bg); color:var(--ink);}
+  .display{font-family:'Space Grotesk',sans-serif;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  header{background:var(--header); padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;}
+  .brand{display:flex; align-items:center; gap:12px;}
+  .brand-icon{width:38px; height:38px; border-radius:10px; background:var(--accent); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:15px;}
+  .brand-name{font-weight:700; font-size:16px; color:#fff;}
+  .brand-sub{font-size:11px; color:#9FC3C4; letter-spacing:.3px;}
+  .tabs{display:flex; gap:8px; flex-wrap:wrap;}
+  .tab-btn{display:flex; align-items:center; gap:6px; padding:9px 14px; border-radius:8px; border:none; cursor:pointer; background:rgba(255,255,255,.08); color:#C9DAD9; font-weight:600; font-size:12.5px; font-family:'Inter',sans-serif;}
+  .tab-btn.active{background:var(--accent); color:#fff;}
+
+  main{padding:18px; max-width:1150px; margin:0 auto;}
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px;}
+  .grid-2{display:grid; grid-template-columns:300px 1fr; gap:16px; align-items:start;}
+  @media (max-width:760px){ .grid-2{grid-template-columns:1fr;} header{padding:14px;} main{padding:12px;} }
+
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:11.5px; font-weight:600; color:var(--muted); margin-bottom:5px;}
+  .field input, .field select{width:100%; padding:9px 10px; border-radius:7px; border:1px solid var(--border); font-size:14px; background:#FAFCFB; color:var(--ink); font-family:'Inter',sans-serif;}
+  .row-2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+
+  .btn{display:inline-flex; align-items:center; gap:6px; padding:10px 16px; border-radius:8px; border:none; font-weight:600; font-size:13.5px; cursor:pointer; font-family:'Inter',sans-serif;}
+  .btn-primary{background:var(--accent); color:#fff;}
+  .btn-primary:disabled{background:#CBD8D6; cursor:not-allowed;}
+  .btn-outline{background:#fff; border:1px solid var(--border); color:var(--header);}
+  .btn-outline.on{background:var(--accent-soft); color:var(--accent);}
+  .hint{font-size:11.5px; color:var(--muted2); margin-top:8px;}
+
+  .panel-title{font-weight:600; font-size:14px; margin-bottom:4px;}
+  .panel-sub{font-size:12px; color:var(--muted2); margin-bottom:12px;}
+
+  .cat-list{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px;}
+  .cat-item{display:flex; align-items:flex-start; gap:8px; padding:10px 12px; border-radius:8px; border:1px solid #E4EBE9; background:#FAFCFB; cursor:pointer;}
+  .cat-item.checked{border-color:var(--accent); background:var(--accent-soft);}
+  .cat-item input{margin-top:2px; accent-color:var(--accent);}
+  .cat-item .name{font-weight:600; font-size:13px;}
+  .cat-item .count{font-size:11px; color:var(--muted2); margin-top:2px;}
+
+  .search-wrap{position:relative; margin-bottom:0;}
+  .search-wrap input{padding-left:30px;}
+  .search-icon{position:absolute; left:9px; top:10px; color:var(--muted2); font-size:14px;}
+
+  .order-list{max-height:560px; overflow-y:auto; border-top:1px solid var(--border);}
+  .order-item{display:block; width:100%; text-align:left; padding:12px 14px; border:none; border-bottom:1px solid #EEF2F1; background:#fff; cursor:pointer;}
+  .order-item.sel{background:var(--accent-soft);}
+  .order-item .top{display:flex; justify-content:space-between; align-items:center;}
+  .order-item .oname{font-weight:600; font-size:13.5px;}
+  .order-item .omr{font-size:11px; color:var(--muted); margin-top:2px;}
+  .empty-note{padding:20px; font-size:13px; color:var(--muted2); text-align:center;}
+
+  .badge{display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:600;}
+  .badge.pending{background:var(--bad-soft); color:var(--bad-fg);}
+  .badge.completed{background:var(--good-soft); color:var(--good);}
+
+  .warn-box{display:flex; align-items:center; gap:6px; margin-top:10px; padding:7px 10px; background:var(--bad-soft); border-radius:7px; color:var(--bad-fg); font-size:12px; font-weight:600;}
+
+  .sec-title{font-weight:700; font-size:12px; color:var(--header); margin:18px 0 10px; text-transform:uppercase; letter-spacing:.3px;}
+  .param-row{display:grid; grid-template-columns:1fr 130px 180px; gap:12px; align-items:center; padding-bottom:10px; border-bottom:1px solid #EEF2F1; margin-bottom:10px;}
+  @media (max-width:600px){ .param-row{grid-template-columns:1fr; gap:6px;} }
+  .param-name{font-weight:600; font-size:13px;}
+  .param-ref{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--muted2);}
+  .param-input-wrap{display:flex; align-items:center; gap:6px;}
+  .param-input-wrap input, .param-input-wrap select{padding:7px 8px; border-radius:7px; border:1px solid var(--border); font-size:13px; font-family:'IBM Plex Mono',monospace; width:90px;}
+  .param-input-wrap select{font-family:'Inter',sans-serif; width:130px; font-size:12.5px;}
+  .flag-tag{font-size:10px; font-weight:700; color:var(--bad);}
+  .rangebar{width:100%;}
+  .rangebar .track{position:relative; height:6px; border-radius:3px; background:#E4EBE9;}
+  .rangebar .fill{position:absolute; top:0; bottom:0; background:var(--barfill); border-radius:3px;}
+  .rangebar .marker{position:absolute; top:-3px; width:12px; height:12px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.12);}
+  .rangebar .labels{display:flex; justify-content:space-between; margin-top:3px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted);}
+  .unit-note{font-size:11.5px; color:var(--muted2);}
+
+  table.hist{width:100%; border-collapse:collapse; font-size:13px;}
+  table.hist th{padding:8px 10px; font-size:11px; color:var(--muted); font-weight:700; text-transform:uppercase; text-align:left; border-bottom:2px solid var(--border);}
+  table.hist td{padding:9px 10px; border-bottom:1px solid #EEF2F1;}
+  .table-wrap{overflow-x:auto;}
+
+  .dashed{border:1px dashed var(--border); border-radius:12px; padding:40px; text-align:center; color:var(--muted2); font-size:13.5px;}
+
+  /* Print */
+  .print-only{display:none;}
+  @media print{
+    .no-print{display:none !important;}
+    .print-only{display:block !important;}
+    body{background:#fff;}
+  }
+  .rpt-header{display:flex; align-items:center; gap:16px; border-bottom:2px solid #12313B; padding-bottom:10px; margin-bottom:16px;}
+  .rpt-logo{width:60px; height:60px; border-radius:50%; border:2px solid #12313B; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px;}
+  .rpt-title-block{text-align:center; flex:1;}
+  .rpt-urdu{font-size:17px; font-weight:700; direction:rtl;}
+  .rpt-en{font-size:14px; font-weight:700; text-decoration:underline;}
+  .rpt-addr{font-size:12px; color:#333;}
+  .rpt-hdr{border-top:1px solid #333; border-left:1px solid #333; margin-bottom:18px; font-size:13px;}
+  .rpt-hdr-row{display:grid;}
+  .rpt-hdr-row > div{border-right:1px solid #333; border-bottom:1px solid #333; padding:6px 9px; display:flex; align-items:center;}
+  .rpt-hdr .lbl{font-weight:700;}
+  .rpt-hdr .shade{background:#e2e2e2; font-weight:600;}
+  .rpt-hdr-row.r1{grid-template-columns:12% 46% 12% 30%;}
+  .rpt-hdr-row.r2{grid-template-columns:12% 38% 10% 15% 10% 15%;}
+  .rpt-hdr-row.r3{grid-template-columns:12% 46% 21% 21%;}
+  table.rpt-results{width:100%; border-collapse:collapse; font-size:13px;}
+  table.rpt-results th{text-align:center; padding:6px 8px; border-top:2px solid #111; border-bottom:1px solid #111;}
+  table.rpt-results th:first-child{text-align:left;}
+  table.rpt-results td{padding:3px 6px;}
+  .rpt-cat-title{font-weight:700; font-size:13.5px; padding-top:14px !important;}
+  .rpt-sec-title{font-weight:700; font-style:italic; padding-top:6px !important; padding-left:10px !important;}
+  .rpt-sig{margin-top:40px; display:flex; justify-content:flex-end;}
+  .rpt-sig div{border-top:1px solid #111; padding-top:4px; width:180px; font-size:12px; text-align:center;}
+</style>
+</head>
+<body>
+
+<header class="no-print">
+  <div class="brand">
+    <div class="brand-icon">IYB</div>
+    <div>
+      <div class="brand-name">ISFAND YAR BUKHARI DISTRICT HOSPITAL</div>
+      <div class="brand-sub">KAMRA ROAD ATTOCK (Pathology Department)</div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn" id="tab-new" onclick="switchView('new')">+ New Order</button>
+    <button class="tab-btn" id="tab-queue" onclick="switchView('queue')">Queue</button>
+    <button class="tab-btn" id="tab-history" onclick="switchView('history')">History (1 yr)</button>
+  </div>
+</header>
+
+<main class="no-print" id="main"></main>
+
+<div id="print-report" class="print-only"></div>
+<div id="print-history" class="print-only"></div>
+
+<script>
+// ---------------- Data model ----------------
+const HOSPITAL = {
+  nameUrdu: "اسفند یاربخاری ڈسٹرکٹ ہسپتال",
+  nameEn: "ISFAND YAR BUKHARI DISTRICT HOSPITAL",
+  address: "KAMRA ROAD ATTOCK (Pathology Department)"
+};
+
+// Stylized recreation of the Government of Punjab emblem: crescent & star, wavy river lines, wheat sheaves.
+const PUNJAB_EMBLEM_SVG = `
+<svg viewBox="0 0 100 100" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="50" cy="50" r="47" fill="none" stroke="#12313B" stroke-width="2.5"/>
+  <circle cx="50" cy="50" r="40" fill="none" stroke="#12313B" stroke-width="1"/>
+  <!-- crescent and star -->
+  <g transform="translate(50,30)">
+    <path d="M -6 -6 A 8 8 0 1 0 6 6 A 6.2 6.2 0 1 1 -6 -6 Z" fill="#12313B"/>
+    <path d="M 10 -2 L 11.2 1 L 14.4 1.1 L 11.8 3 L 12.7 6.1 L 10 4.2 L 7.3 6.1 L 8.2 3 L 5.6 1.1 L 8.8 1 Z" fill="#12313B"/>
+  </g>
+  <!-- waves -->
+  <g stroke="#12313B" stroke-width="1.6" fill="none">
+    <path d="M 22 46 Q 30 40, 38 46 T 54 46 T 70 46 T 78 46"/>
+    <path d="M 22 53 Q 30 47, 38 53 T 54 53 T 70 53 T 78 53"/>
+    <path d="M 22 60 Q 30 54, 38 60 T 54 60 T 70 60 T 78 60"/>
+  </g>
+  <!-- wheat sheaves, left and right -->
+  <g stroke="#12313B" stroke-width="1.3" fill="none" stroke-linecap="round">
+    <path d="M 26 78 Q 24 66, 28 54"/>
+    <path d="M 26 78 L 21 68 M 26 74 L 20 66 M 26 70 L 21 62 M 26 66 L 22 59"/>
+    <path d="M 26 78 L 31 68 M 26 74 L 32 66 M 26 70 L 31 62 M 26 66 L 30 59"/>
+    <path d="M 74 78 Q 76 66, 72 54"/>
+    <path d="M 74 78 L 79 68 M 74 74 L 80 66 M 74 70 L 79 62 M 74 66 L 78 59"/>
+    <path d="M 74 78 L 69 68 M 74 74 L 68 66 M 74 70 L 69 62 M 74 66 L 70 59"/>
+  </g>
+</svg>`;
+
+const TEST_CATALOG = [
+  { id:"urine", category:"Urine Detailed Report", sections:[
+    { title:"Urine Physical Examination", params:[
+      { id:"u_color", name:"Color", type:"select", options:["Pale Yellow","Yellow","Dark Yellow","Amber","Red","Brown"], normal:["Pale Yellow","Yellow"], ref:"Pale Yellow - Yellow" }
+    ]},
+    { title:"Urine Chemical Examination", params:[
+      { id:"u_sg", name:"Specific Gravity", type:"numeric", unit:"", low:1.005, high:1.025, ref:"1.005 - 1.025" },
+      { id:"u_ph", name:"PH", type:"numeric", unit:"", low:5, high:8, ref:"5 - 8" },
+      { id:"u_glu", name:"Glucose", type:"select", options:["Nil","Trace","+1","+2","+3","+4"], normal:["Nil"], ref:"Nil" },
+      { id:"u_pro", name:"Protein", type:"select", options:["Nil","Trace","+1","+2","+3","+4"], normal:["Nil"], ref:"NIL" },
+      { id:"u_uro", name:"Urobilinogen", type:"select", options:["Nil","Normal","+1","+2"], normal:["Nil","Normal"], ref:"Nil" },
+      { id:"u_bili", name:"Bilirubin", type:"select", options:["Nil","+1","+2","+3"], normal:["Nil"], ref:"Nil" },
+      { id:"u_blood", name:"Blood", type:"select", options:["Nil","Trace","+1","+2","+3"], normal:["Nil"], ref:"Nil" },
+      { id:"u_nit", name:"Nitrite", type:"select", options:["Negative","Positive"], normal:["Negative"], ref:"Nil" },
+      { id:"u_ket", name:"Ketone", type:"select", options:["Nil","Trace","+1","+2","+3"], normal:["Nil"], ref:"Nil" }
+    ]},
+    { title:"Urine Microscopic Examination", params:[
+      { id:"u_pus", name:"Pus Cell", type:"text", unit:"/HPF", ref:"00 - 05/HPF" },
+      { id:"u_rbc", name:"Red Blood Cells", type:"text", unit:"/HPF", ref:"Nil/HPF" },
+      { id:"u_epi", name:"Epithelial Cell", type:"text", unit:"/HPF", ref:"Nil/HPF" },
+      { id:"u_cal", name:"Cal Oxalate", type:"select", options:["Nil","Present"], normal:["Nil"], ref:"Nil" },
+      { id:"u_bac", name:"Bacteria", type:"select", options:["Nil","Few","Present","Many"], normal:["Nil"], ref:"Nil" }
+    ]}
+  ]}
+];
+
+function catById(id){ return TEST_CATALOG.find(c=>c.id===id); }
+function paramsForOrder(order){
+  return TEST_CATALOG.filter(c=>order.categories.includes(c.id))
+    .flatMap(c=>c.sections.map(s=>({ sectionTitle:s.title, params:s.params })));
+}
+function paramsForOrderGrouped(order){
+  return TEST_CATALOG.filter(c=>order.categories.includes(c.id))
+    .map(c=>({ categoryName:c.category, sections:c.sections }));
+}
+function flagFor(param, value){
+  if(value===""||value===undefined||value===null) return null;
+  if(param.type==="numeric"){
+    const v=parseFloat(value);
+    if(isNaN(v)) return null;
+    if(v<param.low) return "low";
+    if(v>param.high) return "high";
+    return "normal";
+  }
+  if(param.type==="select"){ return param.normal.includes(value) ? "normal":"abnormal"; }
+  return null;
+}
+
+// ---------------- State ----------------
+let state = {
+  view: "new",
+  orders: JSON.parse(localStorage.getItem("lab-orders") || "[]"),
+  selectedOrderId: null,
+  editMode: false,
+  search: ""
+};
+
+function persistOrders(){ localStorage.setItem("lab-orders", JSON.stringify(state.orders)); }
+function nextMrNo(){
+  let n = parseInt(localStorage.getItem("mrno-counter") || "0", 10) + 1;
+  localStorage.setItem("mrno-counter", String(n));
+  return "IYB-" + String(n).padStart(5,"0");
+}
+function esc(s){ return (s===undefined||s===null) ? "" : String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+// ---------------- View switching ----------------
+function switchView(v){
+  state.view = v;
+  render();
+}
+
+function render(){
+  document.getElementById("tab-new").className = "tab-btn" + (state.view==="new" ? " active":"");
+  document.getElementById("tab-queue").className = "tab-btn" + (state.view==="queue" ? " active":"");
+  document.getElementById("tab-history").className = "tab-btn" + (state.view==="history" ? " active":"");
+  const el = document.getElementById("tab-queue");
+  const pending = state.orders.filter(o=>o.status==="pending").length;
+  el.textContent = "Queue" + (pending ? ` (${pending})` : "");
+
+  const main = document.getElementById("main");
+  if(state.view==="new") main.innerHTML = renderNewOrder();
+  else if(state.view==="queue") main.innerHTML = renderQueue();
+  else main.innerHTML = renderHistory();
+}
+
+// ---------------- New Order ----------------
+function renderNewOrder(){
+  return `
+  <div class="card" style="max-width:420px;">
+    <div class="panel-title display">Patient Details — Urine Detailed Report</div>
+    <div class="field"><label>Full Name</label><input id="f-name" placeholder="e.g. Altaf Hussain" oninput="onNameInput()"></div>
+    <div class="field"><label>Age</label><input id="f-age" placeholder="e.g. 34"></div>
+    <div class="field"><label>Gender</label>
+      <select id="f-gender"><option value="M">M</option><option value="F">F</option></select>
+    </div>
+    <div class="field"><label>Ward</label><input id="f-ward" placeholder="Optional"></div>
+    <div class="row-2">
+      <div class="field"><label>Time In</label><input id="f-timein" placeholder="02:00pm"></div>
+      <div class="field"><label>Time Out</label><input id="f-timeout" placeholder="04:30pm"></div>
+    </div>
+    <button class="btn btn-primary" id="submit-btn" onclick="createOrder()" disabled style="width:100%; justify-content:center;">Create Order (MR.NO auto-assign)</button>
+    <div class="hint" id="submit-hint">Patient ka naam enter karein.</div>
+  </div>`;
+}
+
+function onNameInput(){
+  const name = document.getElementById("f-name").value.trim();
+  const btn = document.getElementById("submit-btn");
+  if(btn) btn.disabled = !name;
+}
+
+function createOrder(){
+  const name = document.getElementById("f-name").value.trim();
+  if(!name) return;
+  const order = {
+    id: nextMrNo(),
+    name: name,
+    age: document.getElementById("f-age").value,
+    gender: document.getElementById("f-gender").value,
+    ward: document.getElementById("f-ward").value,
+    timeIn: document.getElementById("f-timein").value,
+    timeOut: document.getElementById("f-timeout").value,
+    date: new Date().toISOString(),
+    categories: ["urine"],
+    status: "pending",
+    results: {}
+  };
+  order.mrNo = order.id;
+  state.orders.unshift(order);
+  persistOrders();
+  state.selectedOrderId = order.id;
+  state.editMode = false;
+  state.view = "queue";
+  render();
+}
+
+// ---------------- Queue ----------------
+function getSelectedOrder(){ return state.orders.find(o=>o.id===state.selectedOrderId); }
+
+function renderQueue(){
+  return `
+  <div class="grid-2">
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div style="padding:12px;">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input id="search-box" placeholder="Search name or MR.NO" value="${esc(state.search)}" oninput="onSearch(this.value)">
+        </div>
+      </div>
+      <div class="order-list" id="order-list">${renderOrderListItems()}</div>
+    </div>
+    <div id="results-panel">${renderResultsPanel()}</div>
+  </div>`;
+}
+
+function onSearch(v){
+  state.search = v;
+  document.getElementById("order-list").innerHTML = renderOrderListItems();
+}
+
+function renderOrderListItems(){
+  const s = state.search.trim().toLowerCase();
+  const list = s ? state.orders.filter(o=>o.name.toLowerCase().includes(s) || o.mrNo.toLowerCase().includes(s)) : state.orders;
+  if(list.length===0) return `<div class="empty-note">Koi order nahi mila.</div>`;
+  return list.map(o=>`
+    <button class="order-item ${o.id===state.selectedOrderId?'sel':''}" onclick="selectOrder('${o.id}')">
+      <div class="top"><span class="oname">${esc(o.name)}</span><span>›</span></div>
+      <div class="omr mono">${esc(o.mrNo)}</div>
+      <div style="margin-top:6px;"><span class="badge ${o.status}">${o.status==='completed'?'✓ Completed':'○ Pending'}</span></div>
+    </button>`).join("");
+}
+
+function selectOrder(id){
+  state.selectedOrderId = id;
+  state.editMode = false;
+  document.getElementById("order-list").innerHTML = renderOrderListItems();
+  document.getElementById("results-panel").innerHTML = renderResultsPanel();
+}
+
+function renderResultsPanel(){
+  const order = getSelectedOrder();
+  if(!order) return `<div class="dashed">Order select karein queue se.</div>`;
+  const sections = paramsForOrder(order);
+  const allParams = sections.flatMap(s=>s.params);
+  const allEntered = allParams.every(p=> order.results[p.id]!==undefined && order.results[p.id]!=="");
+  const abnormalCount = allParams.filter(p=>{ const f=flagFor(p, order.results[p.id]); return f && f!=="normal"; }).length;
+  const locked = order.status==="completed" && !state.editMode;
+
+  const sectionsHtml = sections.map(sec=>`
+    <div class="sec-title">${esc(sec.title)}</div>
+    ${sec.params.map(p=>renderParamRow(order, p, locked)).join("")}
+  `).join("");
+
+  let actionsHtml;
+  if(order.status==="pending"){
+    actionsHtml = `<button class="btn btn-primary" ${allEntered?'':'disabled'} onclick="markCompleted('${order.id}')">✓ Mark Completed</button>`;
+  } else {
+    actionsHtml = `
+      <button class="btn btn-outline" onclick="printReport()">🖶 Print Report</button>
+      <button class="btn btn-outline ${state.editMode?'on':''}" onclick="toggleEditMode()">✎ ${state.editMode?'Editing... (tap to lock)':'Edit Results'}</button>`;
+  }
+
+  return `
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+      <div>
+        <div class="display" style="font-weight:700; font-size:16px;">${esc(order.name)}</div>
+        <div style="font-size:12.5px; color:var(--muted); margin-top:2px;">${order.age?esc(order.age)+' yrs · ':''}${esc(order.gender)}${order.ward?' · Ward: '+esc(order.ward):''}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="mono" style="font-size:12px; background:#F0F5F4; padding:4px 10px; border-radius:6px; display:inline-block; font-weight:600;">${esc(order.mrNo)}</div>
+        <div style="margin-top:6px;"><span class="badge ${order.status}">${order.status==='completed'?'✓ Completed':'○ Pending'}</span></div>
+      </div>
+    </div>
+    ${abnormalCount>0?`<div class="warn-box">⚠ ${abnormalCount} result${abnormalCount!==1?'s':''} outside reference range</div>`:''}
+    ${sectionsHtml}
+    <div style="margin-top:18px; display:flex; gap:10px; flex-wrap:wrap;">${actionsHtml}</div>
+    ${(!allEntered && order.status==='pending')?'<div class="hint">Mark Completed karne se pehle sab values enter karein.</div>':''}
+  </div>`;
+}
+
+function renderParamRow(order, p, locked){
+  const value = order.results[p.id] ?? "";
+  const flag = flagFor(p, value);
+  let inputHtml;
+  if(p.type==="select"){
+    const opts = ['<option value="">—</option>'].concat(p.options.map(op=>`<option value="${esc(op)}" ${value===op?'selected':''}>${esc(op)}</option>`)).join("");
+    inputHtml = `<select ${locked?'disabled':''} onchange="updateResult('${order.id}','${p.id}', this.value)">${opts}</select>`;
+  } else if(p.type==="numeric"){
+    inputHtml = `<input type="number" ${locked?'disabled':''} value="${esc(value)}" placeholder="—" oninput="updateResult('${order.id}','${p.id}', this.value)" style="border-color:${flag && flag!=='normal' ? '#E9AD86':'var(--border)'}">`;
+  } else {
+    inputHtml = `<input type="text" ${locked?'disabled':''} value="${esc(value)}" placeholder="—" oninput="updateResult('${order.id}','${p.id}', this.value)">`;
+  }
+  const flagTag = (flag && flag!=="normal") ? `<span class="flag-tag" id="flag-${p.id}">${flag==='abnormal'?'ABN':flag.toUpperCase()}</span>` : `<span class="flag-tag" id="flag-${p.id}"></span>`;
+  const visual = p.type==="numeric" ? renderRangeBar(p, value) : `<div class="unit-note">${esc(p.unit||"")}</div>`;
+  return `
+    <div class="param-row" id="row-${p.id}">
+      <div>
+        <div class="param-name">${esc(p.name)}</div>
+        <div class="param-ref">Ref: ${esc(p.ref)}</div>
+      </div>
+      <div class="param-input-wrap">${inputHtml}${flagTag}</div>
+      <div id="visual-${p.id}">${visual}</div>
+    </div>`;
+}
+
+function renderRangeBar(param, value){
+  const flag = flagFor(param, value);
+  const span = param.high - param.low;
+  const padded = span*0.6 || param.high*0.3 || 1;
+  const min = Math.max(0, param.low - padded);
+  const max = param.high + padded;
+  const pct = n => Math.min(100, Math.max(0, ((n-min)/(max-min))*100));
+  const lowPct = pct(param.low), highPct = pct(param.high);
+  const v = parseFloat(value);
+  const markerPct = (value!=="" && !isNaN(v)) ? pct(v) : null;
+  return `<div class="rangebar">
+    <div class="track">
+      <div class="fill" style="left:${lowPct}%; width:${Math.max(highPct-lowPct,2)}%;"></div>
+      ${markerPct!==null?`<div class="marker" style="left:calc(${markerPct}% - 5px); background:${flag==='normal'?'var(--good)':'var(--bad)'};"></div>`:''}
+    </div>
+    <div class="labels"><span>${param.low}</span><span>${param.high}</span></div>
+  </div>`;
+}
+
+function updateResult(orderId, paramId, value){
+  const order = state.orders.find(o=>o.id===orderId);
+  if(!order) return;
+  order.results[paramId] = value;
+  persistOrders();
+  // partial refresh: just this row's flag + visual, plus header abnormal-count/status
+  const param = paramsForOrder(order).flatMap(s=>s.params).find(p=>p.id===paramId);
+  if(param){
+    const flag = flagFor(param, value);
+    const flagEl = document.getElementById("flag-"+paramId);
+    if(flagEl) flagEl.textContent = (flag && flag!=="normal") ? (flag==='abnormal'?'ABN':flag.toUpperCase()) : "";
+    const visualEl = document.getElementById("visual-"+paramId);
+    if(visualEl && param.type==="numeric") visualEl.innerHTML = renderRangeBar(param, value);
+  }
+  // refresh action button enabled-state + warning box + completed button state by re-rendering just the panel wrapper lightly
+  const panel = document.getElementById("results-panel");
+  if(panel){
+    // Re-render whole panel to keep the abnormal-count and Mark Completed button accurate,
+    // but preserve which field currently has focus by restoring focus after.
+    const activeId = document.activeElement ? document.activeElement.id : null;
+    const selStart = document.activeElement && document.activeElement.selectionStart;
+    panel.innerHTML = renderResultsPanel();
+    if(activeId){
+      const el = document.getElementById(activeId);
+      if(el){ el.focus(); if(typeof selStart === "number" && el.setSelectionRange){ try{ el.setSelectionRange(selStart, selStart); }catch(e){} } }
+    }
+  }
+}
+
+function markCompleted(orderId){
+  const order = state.orders.find(o=>o.id===orderId);
+  if(!order) return;
+  order.status = "completed";
+  persistOrders();
+  state.editMode = false;
+  document.getElementById("results-panel").innerHTML = renderResultsPanel();
+  document.getElementById("order-list").innerHTML = renderOrderListItems();
+  render(); // refresh queue count in tab
+}
+
+function toggleEditMode(){
+  state.editMode = !state.editMode;
+  document.getElementById("results-panel").innerHTML = renderResultsPanel();
+}
+
+// ---------------- History ----------------
+function getHistoryOrders(){
+  const cutoff = Date.now() - 365*24*60*60*1000;
+  return state.orders.filter(o=> new Date(o.date).getTime() >= cutoff).sort((a,b)=> new Date(b.date)-new Date(a.date));
+}
+
+function renderHistory(){
+  const orders = getHistoryOrders();
+  const rows = orders.map(o=>`
+    <tr>
+      <td>${new Date(o.date).toLocaleDateString()}</td>
+      <td class="mono">${esc(o.mrNo)}</td>
+      <td>${esc(o.name)}</td>
+      <td>${o.age?esc(o.age)+'/':''}${esc(o.gender)}</td>
+      <td>${o.categories.map(cid=>catById(cid)?.category).join(", ")}</td>
+      <td><span class="badge ${o.status}">${o.status==='completed'?'✓ Completed':'○ Pending'}</span></td>
+    </tr>`).join("");
+  return `
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+      <div>
+        <div class="display" style="font-weight:700; font-size:15px;">Last 1 Year — All Records</div>
+        <div style="font-size:12px; color:var(--muted2); margin-top:2px;">${orders.length} record${orders.length!==1?'s':''}</div>
+      </div>
+      <button class="btn btn-outline" onclick="printHistory()">🖶 Print History</button>
+    </div>
+    <div class="table-wrap">
+      <table class="hist">
+        <thead><tr><th>Date</th><th>MR.NO</th><th>Name</th><th>Age/Gender</th><th>Tests</th><th>Status</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="6" style="text-align:center; color:var(--muted2);">Koi record nahi mila.</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ---------------- Print ----------------
+function reportHeaderHtml(){
+  return `<div class="rpt-header">
+    <div class="rpt-logo">${PUNJAB_EMBLEM_SVG}</div>
+    <div class="rpt-title-block">
+      <div class="rpt-urdu">${HOSPITAL.nameUrdu}</div>
+      <div class="rpt-en">${HOSPITAL.nameEn}</div>
+      <div class="rpt-addr">${HOSPITAL.address}</div>
+    </div>
+  </div>`;
+}
+
+function printReport(){
+  const order = getSelectedOrder();
+  if(!order) return;
+  const grouped = paramsForOrderGrouped(order);
+  const dateStr = new Date(order.date).toLocaleDateString("en-GB", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
+
+  let rows = "";
+  grouped.forEach(cat=>{
+    rows += `<tr><td colspan="3" class="rpt-cat-title">${esc(cat.categoryName)}</td></tr>`;
+    cat.sections.forEach(sec=>{
+      // Only show a "(Section Name)" line when this category actually has more than one section
+      if(cat.sections.length > 1){
+        rows += `<tr><td colspan="3" class="rpt-sec-title">(${esc(sec.title)})</td></tr>`;
+      }
+      sec.params.forEach(p=>{
+        const val = order.results[p.id];
+        rows += `<tr>
+          <td style="padding-left:16px;">${esc(p.name)}</td>
+          <td style="text-align:center;">${val ? esc(val)+(p.unit?' '+esc(p.unit):'') : '—'}</td>
+          <td style="text-align:center;">${esc(p.ref)}</td>
+        </tr>`;
+      });
+    });
+  });
+
+  const html = `
+    ${reportHeaderHtml()}
+    <div class="rpt-hdr">
+      <div class="rpt-hdr-row r1">
+        <div class="lbl">Date</div><div>${dateStr}</div>
+        <div class="lbl">MR .NO</div><div>${esc(order.mrNo)}</div>
+      </div>
+      <div class="rpt-hdr-row r2">
+        <div class="lbl">Name</div><div>${esc(order.name)}</div>
+        <div class="lbl">Age</div><div class="shade">${esc(order.age)||''} YRS</div>
+        <div class="lbl">Gender</div><div class="shade">${esc(order.gender)}</div>
+      </div>
+      <div class="rpt-hdr-row r3">
+        <div class="lbl">Ward</div><div>${esc(order.ward)||''}</div>
+        <div>Time In:${esc(order.timeIn)||''}</div>
+        <div>Time Out:${esc(order.timeOut)||''}</div>
+      </div>
+    </div>
+    <table class="rpt-results">
+      <thead><tr><th>Test Name</th><th>Patient Result</th><th>Reference Range</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="rpt-sig"><div>Pathologist Signature</div></div>
+  `;
+  document.getElementById("print-report").innerHTML = html;
+  window.print();
+}
+
+function printHistory(){
+  const orders = getHistoryOrders();
+  const rows = orders.map(o=>`
+    <tr>
+      <td style="padding:4px 6px;">${new Date(o.date).toLocaleDateString()}</td>
+      <td style="padding:4px 6px;">${esc(o.mrNo)}</td>
+      <td style="padding:4px 6px;">${esc(o.name)}</td>
+      <td style="padding:4px 6px;">${o.age?esc(o.age)+'/':''}${esc(o.gender)}</td>
+      <td style="padding:4px 6px;">${o.categories.map(cid=>catById(cid)?.category).join(", ")}</td>
+      <td style="padding:4px 6px;">${esc(o.status)}</td>
+    </tr>`).join("");
+  const html = `
+    ${reportHeaderHtml()}
+    <div style="font-weight:700; font-size:14px; margin-bottom:10px;">Patient History Report — Last 1 Year (${orders.length} records)</div>
+    <table class="rpt" style="font-size:12px;">
+      <thead><tr><th>Date</th><th>MR.NO</th><th>Name</th><th>Age/Gender</th><th>Tests</th><th>Status</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+  document.getElementById("print-history").innerHTML = html;
+  window.print();
+}
+
+// ---------------- Init ----------------
+document.querySelector(".brand-icon").innerHTML = PUNJAB_EMBLEM_SVG;
+document.querySelector(".brand-icon").style.background = "#fff";
+document.querySelector(".brand-icon").style.padding = "2px";
+render();
+</script>
+</body>
+</html>
