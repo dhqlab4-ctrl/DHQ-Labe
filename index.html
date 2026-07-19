@@ -73,10 +73,12 @@
   .warn-box{display:flex; align-items:center; gap:6px; margin-top:10px; padding:7px 10px; background:var(--bad-soft); border-radius:7px; color:var(--bad-fg); font-size:12px; font-weight:600;}
 
   .sec-title{font-weight:700; font-size:12px; color:var(--header); margin:18px 0 10px; text-transform:uppercase; letter-spacing:.3px;}
+  .cat-heading{font-weight:700; font-size:14.5px; color:var(--accent); margin:22px 0 6px; padding-bottom:6px; border-bottom:2px solid var(--accent-soft);}
+  .cat-heading:first-child{margin-top:14px;}
   .param-row{display:grid; grid-template-columns:1fr 130px 180px; gap:12px; align-items:center; padding-bottom:10px; border-bottom:1px solid #EEF2F1; margin-bottom:10px;}
   @media (max-width:600px){ .param-row{grid-template-columns:1fr; gap:6px;} }
   .param-name{font-weight:600; font-size:13px;}
-  .param-ref{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--muted2);}
+  .param-ref{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--muted2); white-space:pre-line;}
   .param-input-wrap{display:flex; align-items:center; gap:6px;}
   .param-input-wrap input, .param-input-wrap select{padding:7px 8px; border-radius:7px; border:1px solid var(--border); font-size:13px; font-family:'IBM Plex Mono',monospace; width:90px;}
   .param-input-wrap select{font-family:'Inter',sans-serif; width:130px; font-size:12.5px;}
@@ -94,6 +96,10 @@
   .table-wrap{overflow-x:auto;}
 
   .dashed{border:1px dashed var(--border); border-radius:12px; padding:40px; text-align:center; color:var(--muted2); font-size:13.5px;}
+
+  .storage-banner{padding:10px 18px; font-size:13px; font-weight:600; text-align:center;}
+  .storage-banner.warn{background:var(--bad-soft); color:var(--bad-fg);}
+  .storage-banner.err{background:#C1440E; color:#fff;}
 
   /* Print */
   .print-only{display:none;}
@@ -124,6 +130,8 @@
   .rpt-sec-title{font-weight:700; font-style:italic; padding-top:6px !important; padding-left:10px !important;}
   .rpt-sig{margin-top:40px; display:flex; justify-content:flex-end;}
   .rpt-sig div{border-top:1px solid #111; padding-top:4px; width:180px; font-size:12px; text-align:center;}
+  .rpt-comments{margin-top:14px; padding-top:10px; border-top:1px dashed #333; font-size:11.5px; color:#222;}
+  .rpt-pagebreak{page-break-after:always;}
 </style>
 </head>
 <body>
@@ -139,9 +147,11 @@
   <div class="tabs">
     <button class="tab-btn" id="tab-new" onclick="switchView('new')">+ New Order</button>
     <button class="tab-btn" id="tab-queue" onclick="switchView('queue')">Queue</button>
-    <button class="tab-btn" id="tab-history" onclick="switchView('history')">History (1 yr)</button>
+    <button class="tab-btn" id="tab-history" onclick="switchView('history')">History</button>
   </div>
 </header>
+
+<div id="storage-banner" class="no-print"></div>
 
 <main class="no-print" id="main"></main>
 
@@ -184,13 +194,13 @@ const PUNJAB_EMBLEM_SVG = `
 </svg>`;
 
 const TEST_CATALOG = [
-  { id:"urine", category:"Urine Detailed Report", sections:[
-    { title:"Urine Physical Examination", params:[
+  { id:"urine", category:"Urine Detailed Report", hasUnitsColumn:false, printGroupLabel:"Urine Detailed Report", sections:[
+    { title:"(Urine Physical Examination)", params:[
       { id:"u_color", name:"Color", type:"select", options:["Pale Yellow","Yellow","Dark Yellow","Amber","Red","Brown"], normal:["Pale Yellow","Yellow"], ref:"Pale Yellow - Yellow" }
     ]},
-    { title:"Urine Chemical Examination", params:[
-      { id:"u_sg", name:"Specific Gravity", type:"numeric", unit:"", low:1.005, high:1.025, ref:"1.005 - 1.025" },
-      { id:"u_ph", name:"PH", type:"numeric", unit:"", low:5, high:8, ref:"5 - 8" },
+    { title:"(Urine Chemical Examination)", params:[
+      { id:"u_sg", name:"Specific Gravity", type:"numeric", unit:"", low:1.005, high:1.025, ref:"1.005 -1.025" },
+      { id:"u_ph", name:"PH", type:"numeric", unit:"", low:5, high:8, ref:"(5 – 8)" },
       { id:"u_glu", name:"Glucose", type:"select", options:["Nil","Trace","+1","+2","+3","+4"], normal:["Nil"], ref:"Nil" },
       { id:"u_pro", name:"Protein", type:"select", options:["Nil","Trace","+1","+2","+3","+4"], normal:["Nil"], ref:"NIL" },
       { id:"u_uro", name:"Urobilinogen", type:"select", options:["Nil","Normal","+1","+2"], normal:["Nil","Normal"], ref:"Nil" },
@@ -199,24 +209,94 @@ const TEST_CATALOG = [
       { id:"u_nit", name:"Nitrite", type:"select", options:["Negative","Positive"], normal:["Negative"], ref:"Nil" },
       { id:"u_ket", name:"Ketone", type:"select", options:["Nil","Trace","+1","+2","+3"], normal:["Nil"], ref:"Nil" }
     ]},
-    { title:"Urine Microscopic Examination", params:[
-      { id:"u_pus", name:"Pus Cell", type:"text", unit:"/HPF", ref:"00 - 05/HPF" },
-      { id:"u_rbc", name:"Red Blood Cells", type:"text", unit:"/HPF", ref:"Nil/HPF" },
+    { title:"(Urine Microscopic Examination)", params:[
+      { id:"u_pus", name:"Pus Cell", type:"text", unit:"/HPF", ref:"00 - 05/ HPF" },
+      { id:"u_rbc", name:"Red Blood Cells", type:"text", unit:"/HPF", ref:"Nil /HPF" },
       { id:"u_epi", name:"Epithelial Cell", type:"text", unit:"/HPF", ref:"Nil/HPF" },
       { id:"u_cal", name:"Cal Oxalate", type:"select", options:["Nil","Present"], normal:["Nil"], ref:"Nil" },
       { id:"u_bac", name:"Bacteria", type:"select", options:["Nil","Few","Present","Many"], normal:["Nil"], ref:"Nil" }
     ]}
-  ]}
+  ]},
+
+  { id:"chem_screen", category:"Chemistry (Glucose + Screening)", hasUnitsColumn:false,
+    comments:"Please note, it is a screening test performed by ICT method. Therefore, any positive results should always be confirmed by ELISA technique.",
+    sections:[
+      { title:"Chemistry", params:[
+        { id:"cs_glu", name:"Glucose Random", type:"numeric", unit:"mg/dl", low:0, high:200, ref:"<200mg/dl" }
+      ]},
+      { title:"SEROLOGY", params:[
+        { id:"cs_hbs", name:"HBS", type:"select", options:["Non-Reactive","Reactive"], normal:["Non-Reactive"], ref:"Non-Reactive" },
+        { id:"cs_hcv", name:"Anti HCV", type:"select", options:["Non-Reactive","Reactive"], normal:["Non-Reactive"], ref:"Non-Reactive" },
+        { id:"cs_hiv", name:"HIV", type:"select", options:["Non-Reactive","Reactive"], normal:["Non-Reactive"], ref:"Non-Reactive" }
+      ]}
+    ]},
+
+  { id:"cbc", category:"Hematology — Complete Blood Picture (CBC)", hasUnitsColumn:false, printGroupLabel:"Hematology", sections:[
+    { title:"Complete Blood Pictur(CBC)", params:[
+      { id:"cbc_wbc", name:"WBC Count", type:"numeric", unit:"", low:4000, high:11000, ref:"4000 – 11,000" },
+      { id:"cbc_rbc", name:"RBC", type:"numeric", unit:"", low:4.5, high:6.0, ref:"4.5 – 6.0" },
+      { id:"cbc_hb", name:"Haemoglobin", type:"numeric", unit:"", low:14.0, high:18.0, ref:"14.0 – 18.0" },
+      { id:"cbc_hct", name:"HCT", type:"numeric", unit:"", low:40, high:50, ref:"40 - 50" },
+      { id:"cbc_mcv", name:"MCV", type:"numeric", unit:"", low:80, high:95, ref:"80 - 95" },
+      { id:"cbc_mch", name:"MCH", type:"numeric", unit:"", low:27, high:31, ref:"27 - 31" },
+      { id:"cbc_mchc", name:"MCHC", type:"numeric", unit:"", low:32, high:36, ref:"32 - 36" },
+      { id:"cbc_plt", name:"PLT", type:"numeric", unit:"", low:150000, high:450000, ref:"150,000 – 450,000" }
+    ]},
+    { title:"Differential Count", params:[
+      { id:"cbc_neu", name:"Neutrophils", type:"numeric", unit:"", low:50, high:70, ref:"50 - 70" },
+      { id:"cbc_lym", name:"Lymphocytes", type:"numeric", unit:"", low:25, high:40, ref:"25- 40" },
+      { id:"cbc_mono", name:"Monocytes", type:"numeric", unit:"", low:2, high:10, ref:"2 - 10" },
+      { id:"cbc_eos", name:"Eosinophils", type:"numeric", unit:"", low:0, high:4, ref:"0 - 04" }
+    ]}
+  ]},
+
+  { id:"lipid", category:"Lipid Profile", hasUnitsColumn:true, sections:[
+    { title:"Lipid Profile", params:[
+      { id:"lp_chol", name:"Serum Total Cholesterol", type:"text", unit:"mg/dl", ref:"Desirable  <200\nBorderline High (200-240)\nHigh (>240)" },
+      { id:"lp_trig", name:"Serum Triglycerides", type:"text", unit:"mg/dl", ref:"Normal (<150)\nBorderline High (150-199)\nHigh (200-499)\nVery High (>500)" },
+      { id:"lp_hdl", name:"HDL Cholesterol", type:"text", unit:"mg/dl", ref:"Normal (<40)\nBorderline High (40-60)\nHigh (>60)\nVery High (>100)" },
+      { id:"lp_ldl", name:"LDL Cholesterol", type:"text", unit:"mg/dl", ref:"Normal (<100)\nBorderline High (100-129)\nHigh (130-180)\nVery High (>180)" },
+      { id:"lp_vldl", name:"VLDL", type:"text", unit:"mg/dl", ref:"Normal (<50)\nBorderline High (100-129)\nHigh (130-180)\nVery High (>180)" }
+    ]}
+  ]},
+
+  { id:"comprehensive", category:"Chemistry Panel (LFT / RFT / Electrolytes / Serology)", hasUnitsColumn:true, printGroupLabel:"Chemistry",
+    comments:"Please note, it is a screening test performed by ICT method. Therefore, any positive results should always be confirmed by ELISA technique.",
+    sections:[
+      { title:"LIVER PROFILE", params:[
+        { id:"lft_alt", name:"ALT (SGPT)", type:"numeric", unit:"U/L", low:0, high:45, ref:"< 45" },
+        { id:"lft_bili", name:"TOTAL BILIRUBIN", type:"numeric", unit:"mg/dl", low:0, high:1.2, ref:"Adult up to 1.2mg/dl" },
+        { id:"lft_dbili", name:"Direct Bilirubin", type:"text", unit:"mg/dl", ref:"—" },
+        { id:"lft_ibili", name:"Indirect Bilirubin", type:"text", unit:"mg/dl", ref:"—" },
+        { id:"lft_ast", name:"AST", type:"numeric", unit:"U/L", low:0, high:35, ref:"<35" },
+        { id:"lft_alp", name:"ALP", type:"numeric", unit:"U/L", low:40, high:130, ref:"40 - 130" }
+      ]},
+      { title:"RENAL FUNCTION TEST", params:[
+        { id:"rft_urea", name:"Blood Urea", type:"numeric", unit:"mg/dl", low:10, high:50, ref:"10 - 50 mg/dl" },
+        { id:"rft_creat", name:"Serum Creatinine", type:"numeric", unit:"mg/dl", low:0.6, high:1.5, ref:"0.6 - 1.5mg/dl" },
+        { id:"rft_glu", name:"Glucose Random", type:"numeric", unit:"mg/dl", low:0, high:200, ref:"<200mg/dl" }
+      ]},
+      { title:"Electrolytes:", params:[
+        { id:"el_na", name:"Sodium", type:"numeric", unit:"mmol/L", low:135, high:145, ref:"135 - 145" },
+        { id:"el_k", name:"Potassium", type:"numeric", unit:"mmol/L", low:3.5, high:5.5, ref:"3.5 - 5.5" },
+        { id:"el_cl", name:"Chloride", type:"numeric", unit:"mmol/L", low:98, high:108, ref:"98 – 108" }
+      ]},
+      { title:"SEROLOGY", params:[
+        { id:"comp_hbsag", name:"HBsAg", type:"select", options:["Non-Reactive","Reactive"], normal:["Non-Reactive"], ref:"Non-Reactive" },
+        { id:"comp_hcv", name:"HCV", type:"select", options:["Non-Reactive","Reactive"], normal:["Non-Reactive"], ref:"Non-Reactive" },
+        { id:"comp_hiv", name:"HIV", type:"select", options:["Non-Reactive","Reactive"], normal:["Non-Reactive"], ref:"Non-Reactive" }
+      ]}
+    ]}
 ];
 
 function catById(id){ return TEST_CATALOG.find(c=>c.id===id); }
 function paramsForOrder(order){
   return TEST_CATALOG.filter(c=>order.categories.includes(c.id))
-    .flatMap(c=>c.sections.map(s=>({ sectionTitle:s.title, params:s.params })));
+    .flatMap(c=>c.sections.map(s=>({ sectionTitle:s.title, params:s.params, categoryId:c.id, categoryName:c.printGroupLabel||c.category })));
 }
 function paramsForOrderGrouped(order){
   return TEST_CATALOG.filter(c=>order.categories.includes(c.id))
-    .map(c=>({ categoryName:c.category, sections:c.sections }));
+    .map(c=>({ categoryName:c.printGroupLabel || c.category, hasUnitsColumn:!!c.hasUnitsColumn, comments:c.comments, sections:c.sections }));
 }
 function flagFor(param, value){
   if(value===""||value===undefined||value===null) return null;
@@ -231,20 +311,101 @@ function flagFor(param, value){
   return null;
 }
 
+// ---------------- Storage (IndexedDB — much larger device-level storage than localStorage) ----------------
+const DB_NAME = "lab-system-db";
+const STORE_NAME = "kv";
+
+function dbOpen(){
+  return new Promise((resolve,reject)=>{
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = ()=> req.result.createObjectStore(STORE_NAME);
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+async function dbGet(key){
+  const db = await dbOpen();
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction(STORE_NAME,"readonly");
+    const req = tx.objectStore(STORE_NAME).get(key);
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+async function dbSet(key, val){
+  const db = await dbOpen();
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction(STORE_NAME,"readwrite");
+    tx.objectStore(STORE_NAME).put(val, key);
+    tx.oncomplete = ()=> resolve();
+    tx.onerror = ()=> reject(tx.error);
+  });
+}
+
 // ---------------- State ----------------
 let state = {
   view: "new",
-  orders: JSON.parse(localStorage.getItem("lab-orders") || "[]"),
+  orders: [],
   selectedOrderId: null,
   editMode: false,
   search: ""
 };
 
-function persistOrders(){ localStorage.setItem("lab-orders", JSON.stringify(state.orders)); }
-function nextMrNo(){
-  let n = parseInt(localStorage.getItem("mrno-counter") || "0", 10) + 1;
-  localStorage.setItem("mrno-counter", String(n));
-  return "IYB-" + String(n).padStart(5,"0");
+async function loadOrders(){
+  try{
+    const fromDb = await dbGet("lab-orders");
+    if(fromDb){ state.orders = fromDb; return; }
+  }catch(e){ console.error("IndexedDB load failed:", e); }
+  // Fallback: older data saved before this update, or IndexedDB unavailable
+  try{ state.orders = JSON.parse(localStorage.getItem("lab-orders") || "[]"); }catch(e){ state.orders = []; }
+}
+
+async function persistOrders(){
+  try{
+    await dbSet("lab-orders", state.orders);
+    hideStorageBanner("err");
+  }catch(e){
+    console.error("IndexedDB save failed, falling back to localStorage:", e);
+    try{
+      localStorage.setItem("lab-orders", JSON.stringify(state.orders));
+      showStorageBanner("warn", "⚠ Behtar storage available nahi thi, data localStorage mein save hua (limited space).");
+    }catch(e2){
+      console.error("localStorage save also failed:", e2);
+      showStorageBanner("err", "❌ Yeh record save NAHI ho saka — device ki storage bhar chuki hai. Foran purana data backup/export karein ya storage khali karein, warna yeh record kho jaye ga.");
+      alert("Zaroori: Yeh record save nahi ho saka kyunke device ki storage bhar chuki hai. Kirpya storage khali karein.");
+    }
+  }
+  checkStorageHealth();
+}
+
+function showStorageBanner(level, msg){
+  const el = document.getElementById("storage-banner");
+  if(el) el.innerHTML = `<div class="storage-banner ${level}">${msg}</div>`;
+}
+function hideStorageBanner(level){
+  const el = document.getElementById("storage-banner");
+  if(el && el.querySelector(`.${level}`)) el.innerHTML = "";
+}
+
+async function checkStorageHealth(){
+  try{
+    if(navigator.storage && navigator.storage.estimate){
+      const { usage, quota } = await navigator.storage.estimate();
+      if(quota){
+        const pct = (usage/quota)*100;
+        if(pct >= 90){
+          showStorageBanner("err", `❌ Storage ${pct.toFixed(0)}% bhar chuki hai — foran data backup/export karein, warna nayi records save nahi ho paein gi.`);
+        } else if(pct >= 75){
+          showStorageBanner("warn", `⚠ Storage ${pct.toFixed(0)}% istemaal ho chuki hai. Jald backup lena behtar rahega.`);
+        }
+      }
+    }
+  }catch(e){ /* estimate() not supported everywhere — safe to ignore */ }
+}
+function nextInternalId(){
+  let n = parseInt(localStorage.getItem("internal-counter") || "0", 10) + 1;
+  localStorage.setItem("internal-counter", String(n));
+  return "REC-" + String(n).padStart(6,"0");
 }
 function esc(s){ return (s===undefined||s===null) ? "" : String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
@@ -270,35 +431,63 @@ function render(){
 
 // ---------------- New Order ----------------
 function renderNewOrder(){
+  const cats = TEST_CATALOG.map(cat=>{
+    const count = cat.sections.reduce((n,s)=>n+s.params.length,0);
+    return `<label class="cat-item" id="cat-${cat.id}">
+      <input type="checkbox" onchange="onCatToggle('${cat.id}')">
+      <div><div class="name">${esc(cat.category)}</div><div class="count">${count} parameter${count!==1?"s":""}</div></div>
+    </label>`;
+  }).join("");
+
   return `
-  <div class="card" style="max-width:420px;">
-    <div class="panel-title display">Patient Details — Urine Detailed Report</div>
-    <div class="field"><label>Full Name</label><input id="f-name" placeholder="e.g. Altaf Hussain" oninput="onNameInput()"></div>
-    <div class="field"><label>Age</label><input id="f-age" placeholder="e.g. 34"></div>
-    <div class="field"><label>Gender</label>
-      <select id="f-gender"><option value="M">M</option><option value="F">F</option></select>
+  <div class="grid-2">
+    <div class="card">
+      <div class="panel-title display">Patient Details</div>
+      <div class="field"><label>Full Name</label><input id="f-name" placeholder="e.g. Altaf Hussain" oninput="onFormInput()"></div>
+      <div class="field"><label>MR.NO</label><input id="f-mrno" placeholder="e.g. ---- (optional, same as paper slip)"></div>
+      <div class="field"><label>Age</label><input id="f-age" placeholder="e.g. 34"></div>
+      <div class="field"><label>Gender</label>
+        <select id="f-gender"><option value="M">M</option><option value="F">F</option></select>
+      </div>
+      <div class="field"><label>Ward</label><input id="f-ward" placeholder="Optional"></div>
+      <div class="row-2">
+        <div class="field"><label>Time In</label><input id="f-timein" placeholder="02:00pm"></div>
+        <div class="field"><label>Time Out</label><input id="f-timeout" placeholder="04:30pm"></div>
+      </div>
+      <button class="btn btn-primary" id="submit-btn" onclick="createOrder()" disabled style="width:100%; justify-content:center;">Create Order</button>
+      <div class="hint" id="submit-hint">Naam aur kam az kam 1 test select karein.</div>
     </div>
-    <div class="field"><label>Ward</label><input id="f-ward" placeholder="Optional"></div>
-    <div class="row-2">
-      <div class="field"><label>Time In</label><input id="f-timein" placeholder="02:00pm"></div>
-      <div class="field"><label>Time Out</label><input id="f-timeout" placeholder="04:30pm"></div>
+    <div class="card">
+      <div class="panel-title display">Select Test(s)</div>
+      <div class="panel-sub" id="cat-count">0 tests selected</div>
+      <div class="cat-list">${cats}</div>
     </div>
-    <button class="btn btn-primary" id="submit-btn" onclick="createOrder()" disabled style="width:100%; justify-content:center;">Create Order (MR.NO auto-assign)</button>
-    <div class="hint" id="submit-hint">Patient ka naam enter karein.</div>
   </div>`;
 }
 
-function onNameInput(){
-  const name = document.getElementById("f-name").value.trim();
+function onCatToggle(id){
+  const el = document.getElementById("cat-"+id);
+  el.classList.toggle("checked");
+  onFormInput();
+}
+
+function onFormInput(){
+  const name = document.getElementById("f-name")?.value.trim();
+  const selected = TEST_CATALOG.filter(c=>document.getElementById("cat-"+c.id)?.classList.contains("checked"));
+  const countEl = document.getElementById("cat-count");
+  if(countEl) countEl.textContent = selected.length + " test" + (selected.length!==1?"s":"") + " selected";
   const btn = document.getElementById("submit-btn");
-  if(btn) btn.disabled = !name;
+  if(btn) btn.disabled = !(name && selected.length>0);
 }
 
 function createOrder(){
   const name = document.getElementById("f-name").value.trim();
-  if(!name) return;
+  const selectedCats = TEST_CATALOG.filter(c=>document.getElementById("cat-"+c.id).classList.contains("checked")).map(c=>c.id);
+  if(!name || selectedCats.length===0) return;
+  const mrNoInput = document.getElementById("f-mrno").value.trim();
   const order = {
-    id: nextMrNo(),
+    id: nextInternalId(),
+    mrNo: mrNoInput || "----",
     name: name,
     age: document.getElementById("f-age").value,
     gender: document.getElementById("f-gender").value,
@@ -306,11 +495,11 @@ function createOrder(){
     timeIn: document.getElementById("f-timein").value,
     timeOut: document.getElementById("f-timeout").value,
     date: new Date().toISOString(),
-    categories: ["urine"],
+    categories: selectedCats,
     status: "pending",
-    results: {}
+    results: {},
+    customParams: []
   };
-  order.mrNo = order.id;
   state.orders.unshift(order);
   persistOrders();
   state.selectedOrderId = order.id;
@@ -367,18 +556,32 @@ function renderResultsPanel(){
   if(!order) return `<div class="dashed">Order select karein queue se.</div>`;
   const sections = paramsForOrder(order);
   const allParams = sections.flatMap(s=>s.params);
-  const allEntered = allParams.every(p=> order.results[p.id]!==undefined && order.results[p.id]!=="");
+  const anyEntered = allParams.some(p=> order.results[p.id]!==undefined && order.results[p.id]!=="") || (order.customParams||[]).some(cp=>cp.value && cp.value.trim());
   const abnormalCount = allParams.filter(p=>{ const f=flagFor(p, order.results[p.id]); return f && f!=="normal"; }).length;
   const locked = order.status==="completed" && !state.editMode;
 
-  const sectionsHtml = sections.map(sec=>`
-    <div class="sec-title">${esc(sec.title)}</div>
-    ${sec.params.map(p=>renderParamRow(order, p, locked)).join("")}
-  `).join("");
+  // group consecutive sections by their parent category so multi-test orders show a clear heading per test
+  let sectionsHtml = "";
+  let lastCategoryId = null;
+  const showSectionTitleFor = {};
+  order.categories.forEach(cid=>{
+    const cat = catById(cid);
+    if(cat) showSectionTitleFor[cid] = cat.sections.length > 1;
+  });
+  sections.forEach(sec=>{
+    if(sec.categoryId !== lastCategoryId){
+      sectionsHtml += `<div class="cat-heading">${esc(sec.categoryName)}</div>`;
+      lastCategoryId = sec.categoryId;
+    }
+    if(showSectionTitleFor[sec.categoryId]){
+      sectionsHtml += `<div class="sec-title">${esc(sec.sectionTitle)}</div>`;
+    }
+    sectionsHtml += sec.params.map(p=>renderParamRow(order, p, locked)).join("");
+  });
 
   let actionsHtml;
   if(order.status==="pending"){
-    actionsHtml = `<button class="btn btn-primary" ${allEntered?'':'disabled'} onclick="markCompleted('${order.id}')">✓ Mark Completed</button>`;
+    actionsHtml = `<button class="btn btn-primary" ${anyEntered?'':'disabled'} onclick="markCompleted('${order.id}')">✓ Mark Completed</button>`;
   } else {
     actionsHtml = `
       <button class="btn btn-outline" onclick="printReport()">🖶 Print Report</button>
@@ -397,11 +600,68 @@ function renderResultsPanel(){
         <div style="margin-top:6px;"><span class="badge ${order.status}">${order.status==='completed'?'✓ Completed':'○ Pending'}</span></div>
       </div>
     </div>
-    ${abnormalCount>0?`<div class="warn-box">⚠ ${abnormalCount} result${abnormalCount!==1?'s':''} outside reference range</div>`:''}
+    <div id="warn-box-area">${abnormalCount>0?`<div class="warn-box">⚠ ${abnormalCount} result${abnormalCount!==1?'s':''} outside reference range</div>`:''}</div>
     ${sectionsHtml}
-    <div style="margin-top:18px; display:flex; gap:10px; flex-wrap:wrap;">${actionsHtml}</div>
-    ${(!allEntered && order.status==='pending')?'<div class="hint">Mark Completed karne se pehle sab values enter karein.</div>':''}
+    ${renderCustomParamsSection(order, locked)}
+    ${!locked ? `<button class="btn btn-outline" style="margin-top:10px;" onclick="addCustomParam('${order.id}')">+ Add Custom Test</button>` : ''}
+    <div id="actions-area" style="margin-top:18px; display:flex; gap:10px; flex-wrap:wrap;">${actionsHtml}</div>
+    <div id="hint-area">${(!anyEntered && order.status==='pending')?'<div class="hint">Kam az kam ek result enter karein Mark Completed karne se pehle. Jo test nahi hua wo khaali chhod sakte hain — report mein "—" print hoga.</div>':''}</div>
   </div>`;
+}
+
+function renderCustomParamsSection(order, locked){
+  const list = order.customParams || [];
+  if(list.length===0) return "";
+  const rows = list.map(cp => `
+    <div class="param-row" id="custom-row-${cp.id}">
+      <div>
+        <input type="text" placeholder="Test name" value="${esc(cp.name)}" ${locked?'disabled':''}
+          oninput="updateCustomParam('${order.id}','${cp.id}','name', this.value)"
+          style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border); font-size:13px; font-weight:600; margin-bottom:4px;">
+        <input type="text" placeholder="Reference range" value="${esc(cp.ref)}" ${locked?'disabled':''}
+          oninput="updateCustomParam('${order.id}','${cp.id}','ref', this.value)"
+          style="width:100%; padding:5px 8px; border-radius:6px; border:1px solid var(--border); font-family:'IBM Plex Mono',monospace; font-size:10.5px;">
+      </div>
+      <div class="param-input-wrap">
+        <input type="text" placeholder="Result" value="${esc(cp.value)}" ${locked?'disabled':''}
+          oninput="updateCustomParam('${order.id}','${cp.id}','value', this.value)"
+          style="width:90px; padding:7px 8px; border-radius:7px; border:1px solid var(--border); font-family:'IBM Plex Mono',monospace; font-size:13px;">
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <input type="text" placeholder="Unit" value="${esc(cp.unit)}" ${locked?'disabled':''}
+          oninput="updateCustomParam('${order.id}','${cp.id}','unit', this.value)"
+          style="width:70px; padding:7px 8px; border-radius:7px; border:1px solid var(--border); font-size:12px;">
+        ${!locked ? `<button onclick="removeCustomParam('${order.id}','${cp.id}')" style="border:none; background:none; color:var(--bad); cursor:pointer; font-size:16px; font-weight:700;" title="Remove">×</button>` : ''}
+      </div>
+    </div>`).join("");
+  return `<div class="cat-heading">Additional / Custom Tests</div>${rows}`;
+}
+
+function addCustomParam(orderId){
+  const order = state.orders.find(o=>o.id===orderId);
+  if(!order) return;
+  if(!order.customParams) order.customParams = [];
+  order.customParams.push({ id: "c" + Date.now() + Math.floor(Math.random()*1000), name:"", value:"", ref:"", unit:"" });
+  persistOrders();
+  document.getElementById("results-panel").innerHTML = renderResultsPanel();
+}
+
+function updateCustomParam(orderId, cid, field, value){
+  const order = state.orders.find(o=>o.id===orderId);
+  if(!order || !order.customParams) return;
+  const cp = order.customParams.find(c=>c.id===cid);
+  if(!cp) return;
+  cp[field] = value;
+  persistOrders();
+  if(field === "value") refreshPanelStatus(order);
+}
+
+function removeCustomParam(orderId, cid){
+  const order = state.orders.find(o=>o.id===orderId);
+  if(!order || !order.customParams) return;
+  order.customParams = order.customParams.filter(c=>c.id!==cid);
+  persistOrders();
+  document.getElementById("results-panel").innerHTML = renderResultsPanel();
 }
 
 function renderParamRow(order, p, locked){
@@ -412,7 +672,7 @@ function renderParamRow(order, p, locked){
     const opts = ['<option value="">—</option>'].concat(p.options.map(op=>`<option value="${esc(op)}" ${value===op?'selected':''}>${esc(op)}</option>`)).join("");
     inputHtml = `<select ${locked?'disabled':''} onchange="updateResult('${order.id}','${p.id}', this.value)">${opts}</select>`;
   } else if(p.type==="numeric"){
-    inputHtml = `<input type="number" ${locked?'disabled':''} value="${esc(value)}" placeholder="—" oninput="updateResult('${order.id}','${p.id}', this.value)" style="border-color:${flag && flag!=='normal' ? '#E9AD86':'var(--border)'}">`;
+    inputHtml = `<input type="number" id="input-${p.id}" ${locked?'disabled':''} value="${esc(value)}" placeholder="—" oninput="updateResult('${order.id}','${p.id}', this.value)" style="border-color:${flag && flag!=='normal' ? '#E9AD86':'var(--border)'}">`;
   } else {
     inputHtml = `<input type="text" ${locked?'disabled':''} value="${esc(value)}" placeholder="—" oninput="updateResult('${order.id}','${p.id}', this.value)">`;
   }
@@ -453,7 +713,7 @@ function updateResult(orderId, paramId, value){
   if(!order) return;
   order.results[paramId] = value;
   persistOrders();
-  // partial refresh: just this row's flag + visual, plus header abnormal-count/status
+
   const param = paramsForOrder(order).flatMap(s=>s.params).find(p=>p.id===paramId);
   if(param){
     const flag = flagFor(param, value);
@@ -461,19 +721,34 @@ function updateResult(orderId, paramId, value){
     if(flagEl) flagEl.textContent = (flag && flag!=="normal") ? (flag==='abnormal'?'ABN':flag.toUpperCase()) : "";
     const visualEl = document.getElementById("visual-"+paramId);
     if(visualEl && param.type==="numeric") visualEl.innerHTML = renderRangeBar(param, value);
-  }
-  // refresh action button enabled-state + warning box + completed button state by re-rendering just the panel wrapper lightly
-  const panel = document.getElementById("results-panel");
-  if(panel){
-    // Re-render whole panel to keep the abnormal-count and Mark Completed button accurate,
-    // but preserve which field currently has focus by restoring focus after.
-    const activeId = document.activeElement ? document.activeElement.id : null;
-    const selStart = document.activeElement && document.activeElement.selectionStart;
-    panel.innerHTML = renderResultsPanel();
-    if(activeId){
-      const el = document.getElementById(activeId);
-      if(el){ el.focus(); if(typeof selStart === "number" && el.setSelectionRange){ try{ el.setSelectionRange(selStart, selStart); }catch(e){} } }
+    if(param.type==="numeric"){
+      const inputEl = document.getElementById("input-"+paramId);
+      if(inputEl) inputEl.style.borderColor = (flag && flag!=="normal") ? "#E9AD86" : "var(--border)";
     }
+  }
+
+  refreshPanelStatus(order);
+}
+
+// Updates only the warning box, action button state, and hint text —
+// never touches the result input elements themselves (keeps mobile typing intact).
+function refreshPanelStatus(order){
+  const sections = paramsForOrder(order);
+  const allParams = sections.flatMap(s=>s.params);
+  const abnormalCount = allParams.filter(p=>{ const f=flagFor(p, order.results[p.id]); return f && f!=="normal"; }).length;
+  const anyEntered = allParams.some(p=> order.results[p.id]!==undefined && order.results[p.id]!=="") || (order.customParams||[]).some(cp=>cp.value && cp.value.trim());
+
+  const warnArea = document.getElementById("warn-box-area");
+  if(warnArea) warnArea.innerHTML = abnormalCount>0 ? `<div class="warn-box">⚠ ${abnormalCount} result${abnormalCount!==1?'s':''} outside reference range</div>` : "";
+
+  if(order.status === "pending"){
+    const actionsArea = document.getElementById("actions-area");
+    if(actionsArea){
+      const btn = actionsArea.querySelector("button.btn-primary");
+      if(btn) btn.disabled = !anyEntered;
+    }
+    const hintArea = document.getElementById("hint-area");
+    if(hintArea) hintArea.innerHTML = (!anyEntered) ? '<div class="hint">Kam az kam ek result enter karein Mark Completed karne se pehle. Jo test nahi hua wo khaali chhod sakte hain — report mein "—" print hoga.</div>' : "";
   }
 }
 
@@ -495,11 +770,18 @@ function toggleEditMode(){
 
 // ---------------- History ----------------
 function getHistoryOrders(){
-  const cutoff = Date.now() - 365*24*60*60*1000;
-  return state.orders.filter(o=> new Date(o.date).getTime() >= cutoff).sort((a,b)=> new Date(b.date)-new Date(a.date));
+  let list = [...state.orders].sort((a,b)=> new Date(b.date)-new Date(a.date));
+  const s = (state.historySearch||"").trim().toLowerCase();
+  if(s) list = list.filter(o=> o.name.toLowerCase().includes(s) || o.mrNo.toLowerCase().includes(s));
+  return list;
 }
 
-function renderHistory(){
+function reprintOrder(id){
+  state.selectedOrderId = id;
+  printReport();
+}
+
+function renderHistoryTableBody(){
   const orders = getHistoryOrders();
   const rows = orders.map(o=>`
     <tr>
@@ -509,20 +791,37 @@ function renderHistory(){
       <td>${o.age?esc(o.age)+'/':''}${esc(o.gender)}</td>
       <td>${o.categories.map(cid=>catById(cid)?.category).join(", ")}</td>
       <td><span class="badge ${o.status}">${o.status==='completed'?'✓ Completed':'○ Pending'}</span></td>
+      <td>${o.status==='completed' ? `<button class="btn btn-outline" style="padding:5px 10px; font-size:11.5px;" onclick="reprintOrder('${o.id}')">🖶 Print</button>` : ''}</td>
     </tr>`).join("");
+  return { rows, count: orders.length };
+}
+
+function onHistorySearch(v){
+  state.historySearch = v;
+  const { rows, count } = renderHistoryTableBody();
+  document.getElementById("history-tbody").innerHTML = rows || '<tr><td colspan="7" style="text-align:center; color:var(--muted2);">Koi record nahi mila.</td></tr>';
+  document.getElementById("history-count").textContent = count + " record" + (count!==1?"s":"");
+}
+
+function renderHistory(){
+  const { rows, count } = renderHistoryTableBody();
   return `
   <div class="card">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
       <div>
-        <div class="display" style="font-weight:700; font-size:15px;">Last 1 Year — All Records</div>
-        <div style="font-size:12px; color:var(--muted2); margin-top:2px;">${orders.length} record${orders.length!==1?'s':''}</div>
+        <div class="display" style="font-weight:700; font-size:15px;">All Records</div>
+        <div style="font-size:12px; color:var(--muted2); margin-top:2px;" id="history-count">${count} record${count!==1?'s':''}</div>
       </div>
       <button class="btn btn-outline" onclick="printHistory()">🖶 Print History</button>
     </div>
+    <div class="search-wrap" style="max-width:280px; margin-bottom:12px;">
+      <span class="search-icon">🔍</span>
+      <input id="history-search-box" placeholder="Naam ya MR.NO search karein" value="${esc(state.historySearch||'')}" oninput="onHistorySearch(this.value)">
+    </div>
     <div class="table-wrap">
       <table class="hist">
-        <thead><tr><th>Date</th><th>MR.NO</th><th>Name</th><th>Age/Gender</th><th>Tests</th><th>Status</th></tr></thead>
-        <tbody>${rows || '<tr><td colspan="6" style="text-align:center; color:var(--muted2);">Koi record nahi mila.</td></tr>'}</tbody>
+        <thead><tr><th>Date</th><th>MR.NO</th><th>Name</th><th>Age/Gender</th><th>Tests</th><th>Status</th><th></th></tr></thead>
+        <tbody id="history-tbody">${rows || '<tr><td colspan="7" style="text-align:center; color:var(--muted2);">Koi record nahi mila.</td></tr>'}</tbody>
       </table>
     </div>
   </div>`;
@@ -540,57 +839,147 @@ function reportHeaderHtml(){
   </div>`;
 }
 
+function patientBlockHtml(order, dateStr){
+  return `<div class="rpt-hdr">
+    <div class="rpt-hdr-row r1">
+      <div class="lbl">Date</div><div>${dateStr}</div>
+      <div class="lbl">MR .NO</div><div>${esc(order.mrNo)}</div>
+    </div>
+    <div class="rpt-hdr-row r2">
+      <div class="lbl">Name</div><div>${esc(order.name)}</div>
+      <div class="lbl">Age</div><div class="shade">${esc(order.age)||''} YRS</div>
+      <div class="lbl">Gender</div><div class="shade">${esc(order.gender)}</div>
+    </div>
+    <div class="rpt-hdr-row r3">
+      <div class="lbl">Ward</div><div>${esc(order.ward)||''}</div>
+      <div>Time In:${esc(order.timeIn)||''}</div>
+      <div>Time Out:${esc(order.timeOut)||''}</div>
+    </div>
+  </div>`;
+}
+
 function printReport(){
   const order = getSelectedOrder();
   if(!order) return;
   const grouped = paramsForOrderGrouped(order);
   const dateStr = new Date(order.date).toLocaleDateString("en-GB", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
 
-  let rows = "";
-  grouped.forEach(cat=>{
-    rows += `<tr><td colspan="3" class="rpt-cat-title">${esc(cat.categoryName)}</td></tr>`;
+  const slides = grouped.map((cat, idx)=>{
+    let rows = "";
+    rows += `<tr><td colspan="${cat.hasUnitsColumn?4:3}" class="rpt-cat-title">${esc(cat.categoryName)}</td></tr>`;
     cat.sections.forEach(sec=>{
-      // Only show a "(Section Name)" line when this category actually has more than one section
       if(cat.sections.length > 1){
-        rows += `<tr><td colspan="3" class="rpt-sec-title">(${esc(sec.title)})</td></tr>`;
+        rows += `<tr><td colspan="${cat.hasUnitsColumn?4:3}" class="rpt-sec-title">${esc(sec.title)}</td></tr>`;
       }
       sec.params.forEach(p=>{
         const val = order.results[p.id];
+        const resultCell = val ? esc(val) + (!cat.hasUnitsColumn && p.unit ? ' '+esc(p.unit) : '') : '—';
         rows += `<tr>
           <td style="padding-left:16px;">${esc(p.name)}</td>
-          <td style="text-align:center;">${val ? esc(val)+(p.unit?' '+esc(p.unit):'') : '—'}</td>
-          <td style="text-align:center;">${esc(p.ref)}</td>
+          <td style="text-align:center;">${resultCell}</td>
+          ${cat.hasUnitsColumn ? `<td style="text-align:center;">${esc(p.unit)||''}</td>` : ''}
+          <td style="text-align:center; white-space:pre-line;">${esc(p.ref)}</td>
         </tr>`;
       });
     });
-  });
+    const headCols = cat.hasUnitsColumn
+      ? `<th>Test Name</th><th>Patient Result</th><th>Units</th><th>Reference Range</th>`
+      : `<th>Test Name</th><th>Patient Result</th><th>Reference Range</th>`;
+    return `
+      <div class="rpt-slide">
+        ${reportHeaderHtml()}
+        ${patientBlockHtml(order, dateStr)}
+        <table class="rpt-results">
+          <thead><tr>${headCols}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        ${cat.comments ? `<div class="rpt-comments">Comments: ${esc(cat.comments)}</div>` : ''}
+        <div class="rpt-sig"><div>Pathologist Signature</div></div>
+      </div>
+      ${idx < grouped.length-1 ? '<div class="rpt-pagebreak"></div>' : ''}
+    `;
+  }).join("");
 
-  const html = `
-    ${reportHeaderHtml()}
-    <div class="rpt-hdr">
-      <div class="rpt-hdr-row r1">
-        <div class="lbl">Date</div><div>${dateStr}</div>
-        <div class="lbl">MR .NO</div><div>${esc(order.mrNo)}</div>
-      </div>
-      <div class="rpt-hdr-row r2">
-        <div class="lbl">Name</div><div>${esc(order.name)}</div>
-        <div class="lbl">Age</div><div class="shade">${esc(order.age)||''} YRS</div>
-        <div class="lbl">Gender</div><div class="shade">${esc(order.gender)}</div>
-      </div>
-      <div class="rpt-hdr-row r3">
-        <div class="lbl">Ward</div><div>${esc(order.ward)||''}</div>
-        <div>Time In:${esc(order.timeIn)||''}</div>
-        <div>Time Out:${esc(order.timeOut)||''}</div>
-      </div>
-    </div>
-    <table class="rpt-results">
-      <thead><tr><th>Test Name</th><th>Patient Result</th><th>Reference Range</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <div class="rpt-sig"><div>Pathologist Signature</div></div>
-  `;
-  document.getElementById("print-report").innerHTML = html;
+  const customList = (order.customParams||[]).filter(cp=>cp.name.trim() || cp.value.trim());
+  let customSlide = "";
+  if(customList.length){
+    const rows = customList.map(cp=>`
+      <tr>
+        <td style="padding-left:16px;">${esc(cp.name)||'—'}</td>
+        <td style="text-align:center;">${cp.value ? esc(cp.value)+(cp.unit?' '+esc(cp.unit):'') : '—'}</td>
+        <td style="text-align:center; white-space:pre-line;">${esc(cp.ref)||''}</td>
+      </tr>`).join("");
+    customSlide = `
+      <div class="rpt-pagebreak"></div>
+      <div class="rpt-slide">
+        ${reportHeaderHtml()}
+        ${patientBlockHtml(order, dateStr)}
+        <table class="rpt-results">
+          <thead><tr><th>Test Name</th><th>Patient Result</th><th>Reference Range</th></tr></thead>
+          <tbody><tr><td colspan="3" class="rpt-cat-title">Additional / Custom Tests</td></tr>${rows}</tbody>
+        </table>
+        <div class="rpt-sig"><div>Pathologist Signature</div></div>
+      </div>`;
+  }
+
+  document.getElementById("print-report").innerHTML = slides + customSlide;
+  downloadStandaloneReport(order, slides + customSlide);
+  printWithFilename(order);
+}
+
+// Downloads a self-contained HTML file of this exact report (name_MRno.html).
+// This is a plain HTML file (not a canvas-rendered PDF), so it can never come out
+// corrupted — it can be opened in any browser, any time, and printed directly.
+function downloadStandaloneReport(order, innerHtml){
+  const safeName = (order.name || "Patient").trim().replace(/\s+/g,"_").replace(/[^\w\u0600-\u06FF_-]/g,"");
+  const safeMr = (order.mrNo || "NoMR").trim().replace(/\s+/g,"_").replace(/[^\w-]/g,"") || "NoMR";
+  const filename = `${safeName}_${safeMr}.html`;
+  const styleTag = document.querySelector("style") ? document.querySelector("style").outerHTML : "";
+
+  const doc = `<!DOCTYPE html>
+<html lang="ur">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${safeName} — ${safeMr}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+${styleTag}
+<style>body{background:#fff; padding:20px;} .print-only{display:block !important;}</style>
+</head>
+<body>
+${innerHtml}
+</body>
+</html>`;
+
+  try{
+    const blob = new Blob([doc], {type:"text/html"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=> URL.revokeObjectURL(url), 3000);
+  }catch(e){
+    console.error("Standalone report download failed:", e);
+  }
+}
+
+// Sets document.title to "<Name>_<MRNo>" before printing so that when the user
+// chooses "Save as PDF" in the print dialog, that name is pre-filled — and the
+// browser remembers the folder they picked last time, so repeat saves land in
+// the same place automatically.
+function printWithFilename(order){
+  const safeName = (order.name || "Patient").trim().replace(/\s+/g,"_").replace(/[^\w\u0600-\u06FF_-]/g,"");
+  const safeMr = (order.mrNo || "NoMR").trim().replace(/\s+/g,"_").replace(/[^\w-]/g,"") || "NoMR";
+  const originalTitle = document.title;
+  document.title = `${safeName}_${safeMr}`;
+  const restore = ()=>{ document.title = originalTitle; window.removeEventListener("afterprint", restore); };
+  window.addEventListener("afterprint", restore);
   window.print();
+  setTimeout(restore, 4000); // fallback in case afterprint doesn't fire
 }
 
 function printHistory(){
@@ -606,7 +995,7 @@ function printHistory(){
     </tr>`).join("");
   const html = `
     ${reportHeaderHtml()}
-    <div style="font-weight:700; font-size:14px; margin-bottom:10px;">Patient History Report — Last 1 Year (${orders.length} records)</div>
+    <div style="font-weight:700; font-size:14px; margin-bottom:10px;">Patient History Report — All Records (${orders.length} records)</div>
     <table class="rpt" style="font-size:12px;">
       <thead><tr><th>Date</th><th>MR.NO</th><th>Name</th><th>Age/Gender</th><th>Tests</th><th>Status</th></tr></thead>
       <tbody>${rows}</tbody>
@@ -620,7 +1009,16 @@ function printHistory(){
 document.querySelector(".brand-icon").innerHTML = PUNJAB_EMBLEM_SVG;
 document.querySelector(".brand-icon").style.background = "#fff";
 document.querySelector(".brand-icon").style.padding = "2px";
-render();
+document.getElementById("main").innerHTML = '<div class="dashed">Loading saved records…</div>';
+(async function init(){
+  await loadOrders();
+  if(navigator.storage && navigator.storage.persist){
+    navigator.storage.persist().catch(()=>{}); // ask browser not to auto-clear this data under storage pressure
+  }
+  checkStorageHealth();
+  render();
+})();
+
 </script>
 </body>
 </html>
