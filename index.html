@@ -58,14 +58,6 @@
   .search-wrap input{padding-left:30px;}
   .search-icon{position:absolute; left:9px; top:10px; color:var(--muted2); font-size:14px;}
 
-  .order-list{max-height:560px; overflow-y:auto; border-top:1px solid var(--border);}
-  .order-item{display:block; width:100%; text-align:left; padding:12px 14px; border:none; border-bottom:1px solid #EEF2F1; background:#fff; cursor:pointer;}
-  .order-item.sel{background:var(--accent-soft);}
-  .order-item .top{display:flex; justify-content:space-between; align-items:center;}
-  .order-item .oname{font-weight:600; font-size:13.5px;}
-  .order-item .omr{font-size:11px; color:var(--muted); margin-top:2px;}
-  .empty-note{padding:20px; font-size:13px; color:var(--muted2); text-align:center;}
-
   .badge{display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:600;}
   .badge.pending{background:var(--bad-soft); color:var(--bad-fg);}
   .badge.completed{background:var(--good-soft); color:var(--good);}
@@ -132,9 +124,30 @@
   .rpt-sig div{border-top:1px solid #111; padding-top:4px; width:180px; font-size:12px; text-align:center;}
   .rpt-comments{margin-top:14px; padding-top:10px; border-top:1px dashed #333; font-size:11.5px; color:#222; white-space:pre-line;}
   .rpt-pagebreak{page-break-after:always;}
+
+  /* ---- PIN Lock Screen ---- */
+  #lock-screen{position:fixed; inset:0; z-index:9999; background:var(--bg); display:flex; align-items:center; justify-content:center; flex-direction:column;}
+  #lock-box{background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:36px 32px; width:280px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,0.12);}
+  #lock-box .brand-icon{width:48px; height:48px; margin:0 auto 14px; background:#fff; border-radius:12px; padding:4px;}
+  #lock-box h3{margin:0 0 4px; font-size:16px;}
+  #lock-box p{margin:0 0 18px; font-size:12.5px; color:var(--muted2);}
+  #lock-pin{width:100%; box-sizing:border-box; padding:12px; font-size:20px; text-align:center; letter-spacing:6px; border:1px solid var(--border); border-radius:10px; margin-bottom:12px;}
+  #lock-btn{width:100%; padding:11px; border-radius:10px; border:none; background:var(--accent); color:#fff; font-weight:700; font-size:14px; cursor:pointer;}
+  #lock-error{color:var(--bad, #C1440E); font-size:12.5px; margin-top:10px; min-height:16px;}
 </style>
 </head>
 <body>
+
+<div id="lock-screen" class="no-print">
+  <div id="lock-box">
+    <div class="brand-icon"></div>
+    <h3>Lab System Locked</h3>
+    <p>PIN darj karein</p>
+    <input type="password" id="lock-pin" inputmode="numeric" maxlength="20" placeholder="••••••">
+    <button id="lock-btn" onclick="tryUnlock()">Unlock</button>
+    <div id="lock-error"></div>
+  </div>
+</div>
 
 <header class="no-print">
   <div class="brand">
@@ -146,7 +159,6 @@
   </div>
   <div class="tabs">
     <button class="tab-btn" id="tab-new" onclick="switchView('new')">+ New Order</button>
-    <button class="tab-btn" id="tab-queue" onclick="switchView('queue')">Queue</button>
     <button class="tab-btn" id="tab-history" onclick="switchView('history')">History</button>
   </div>
 </header>
@@ -236,8 +248,7 @@ const TEST_CATALOG = [
     ]}
   ]},
 
-  { id:"comprehensive", category:"Chemistry Panel (LFT / RFT / Electrolytes / Serology)", hasUnitsColumn:true, printGroupLabel:"Chemistry",
-    comments:"Please note, it is a screening test performed by ICT method. Therefore, any positive results should always be confirmed by ELISA technique.",
+  { id:"comprehensive", category:"Chemistry Panel (LFT / RFT / Electrolytes)", hasUnitsColumn:true, printGroupLabel:"Chemistry",
     sections:[
       { title:"LIVER PROFILE", params:[
         { id:"lft_alt", name:"ALT (SGPT)", type:"numeric", unit:"U/L", low:0, high:45, ref:"< 45" },
@@ -256,11 +267,6 @@ const TEST_CATALOG = [
         { id:"el_na", name:"Sodium", type:"numeric", unit:"mmol/L", low:135, high:145, ref:"135 - 145" },
         { id:"el_k", name:"Potassium", type:"numeric", unit:"mmol/L", low:3.5, high:5.5, ref:"3.5 - 5.5" },
         { id:"el_cl", name:"Chloride", type:"numeric", unit:"mmol/L", low:98, high:108, ref:"98 – 108" }
-      ]},
-      { title:"SEROLOGY", params:[
-        { id:"comp_hbsag", name:"HBsAg", type:"select", options:["Non-Reactive","Reactive"], normal:["Non-Reactive"], ref:"Non-Reactive" },
-        { id:"comp_hcv", name:"HCV", type:"select", options:["Non-Reactive","Reactive"], normal:["Non-Reactive"], ref:"Non-Reactive" },
-        { id:"comp_hiv", name:"HIV", type:"select", options:["Non-Reactive","Reactive"], normal:["Non-Reactive"], ref:"Non-Reactive" }
       ]}
     ]},
 
@@ -337,17 +343,48 @@ const TEST_CATALOG = [
     { title:"Chemistry", params:[
       { id:"bsr_glu", name:"Blood Sugar Random", type:"numeric", unit:"mg/dl", low:0, high:200, ref:"<200mg/dl" }
     ]}
+  ]},
+
+  { id:"ra_factor", category:"Serum RA Factor (Quantitative)", hasUnitsColumn:true, printGroupLabel:"Special Chemistry", sections:[
+    { title:"RA Factor (Quantitative)", params:[
+      { id:"ra_val", name:"Serum RA Factor", type:"numeric", unit:"IU/ml", low:0, high:10.0, ref:"<10.0" }
+    ]}
+  ]},
+
+  { id:"bt_ct", category:"Bleeding Time / Clotting Time", hasUnitsColumn:false, printGroupLabel:"Hematology", sections:[
+    { title:"Hematology", params:[
+      { id:"bt_val", name:"Bleeding Time", type:"text", ref:"2 – 7 minutes" },
+      { id:"ct_val", name:"Clotting Time", type:"text", ref:"5 – 11 minutes" }
+    ]}
+  ]},
+
+  { id:"hba1c", category:"Glycosylated Hb (HBA1C)", hasUnitsColumn:true, printGroupLabel:"Chemistry", sections:[
+    { title:"Chemistry", params:[
+      { id:"hba1c_val", name:"Glycosylated Hb (HBA1C)", type:"numeric", unit:"%", low:0, high:5.7, ref:"Normal: < 5.7\nPrediabetic: 5.7-6.4\nDiabetic: > 6.5" }
+    ]}
+  ]},
+
+  { id:"lipase", category:"Serum Lipase", hasUnitsColumn:true, printGroupLabel:"Chemistry", sections:[
+    { title:"Chemistry", params:[
+      { id:"lipase_val", name:"Serum Lipase", type:"numeric", unit:"U/L", low:6, high:78, ref:"6 – 78" }
+    ]}
+  ]},
+
+  { id:"esr", category:"ESR (Erythrocyte Sedimentation Rate)", hasUnitsColumn:true, printGroupLabel:"Hematology", sections:[
+    { title:"Hematology", params:[
+      { id:"esr_val", name:"ESR", type:"numeric", unit:"mm/hr", low:0, high:20, ref:"Male: 0 - 15\nFemale: 0 - 20" }
+    ]}
   ]}
 ];
 
 function catById(id){ return TEST_CATALOG.find(c=>c.id===id); }
 function paramsForOrder(order){
   return TEST_CATALOG.filter(c=>order.categories.includes(c.id))
-    .flatMap(c=>c.sections.map(s=>({ sectionTitle:s.title, params:s.params, categoryId:c.id, categoryName:c.printGroupLabel||c.category })));
+    .flatMap(c=>c.sections.map(s=>({ sectionTitle:s.title, params:s.params, categoryId:c.id, categoryName:c.category })));
 }
 function paramsForOrderGrouped(order){
   return TEST_CATALOG.filter(c=>order.categories.includes(c.id))
-    .map(c=>({ categoryName:c.printGroupLabel || c.category, hasUnitsColumn:!!c.hasUnitsColumn, comments:c.comments, sections:c.sections }));
+    .map(c=>({ categoryName:c.category, hasUnitsColumn:!!c.hasUnitsColumn, comments:c.comments, sections:c.sections }));
 }
 function flagFor(param, value){
   if(value===""||value===undefined||value===null) return null;
@@ -398,8 +435,7 @@ let state = {
   view: "new",
   orders: [],
   selectedOrderId: null,
-  editMode: false,
-  search: ""
+  editMode: false
 };
 
 async function loadOrders(){
@@ -468,15 +504,11 @@ function switchView(v){
 
 function render(){
   document.getElementById("tab-new").className = "tab-btn" + (state.view==="new" ? " active":"");
-  document.getElementById("tab-queue").className = "tab-btn" + (state.view==="queue" ? " active":"");
-  document.getElementById("tab-history").className = "tab-btn" + (state.view==="history" ? " active":"");
-  const el = document.getElementById("tab-queue");
-  const pending = state.orders.filter(o=>o.status==="pending").length;
-  el.textContent = "Queue" + (pending ? ` (${pending})` : "");
+  document.getElementById("tab-history").className = "tab-btn" + (state.view==="history"||state.view==="results" ? " active":"");
 
   const main = document.getElementById("main");
   if(state.view==="new") main.innerHTML = renderNewOrder();
-  else if(state.view==="queue") main.innerHTML = renderQueue();
+  else if(state.view==="results") main.innerHTML = renderResultsView();
   else main.innerHTML = renderHistory();
 }
 
@@ -555,56 +587,31 @@ function createOrder(){
   persistOrders();
   state.selectedOrderId = order.id;
   state.editMode = false;
-  state.view = "queue";
+  state.view = "results";
   render();
 }
 
-// ---------------- Queue ----------------
+// ---------------- Results entry ----------------
 function getSelectedOrder(){ return state.orders.find(o=>o.id===state.selectedOrderId); }
 
-function renderQueue(){
-  return `
-  <div class="grid-2">
-    <div class="card" style="padding:0; overflow:hidden;">
-      <div style="padding:12px;">
-        <div class="search-wrap">
-          <span class="search-icon">🔍</span>
-          <input id="search-box" placeholder="Search name or MR.NO" value="${esc(state.search)}" oninput="onSearch(this.value)">
-        </div>
-      </div>
-      <div class="order-list" id="order-list">${renderOrderListItems()}</div>
-    </div>
-    <div id="results-panel">${renderResultsPanel()}</div>
-  </div>`;
-}
-
-function onSearch(v){
-  state.search = v;
-  document.getElementById("order-list").innerHTML = renderOrderListItems();
-}
-
-function renderOrderListItems(){
-  const s = state.search.trim().toLowerCase();
-  const list = s ? state.orders.filter(o=>o.name.toLowerCase().includes(s) || o.mrNo.toLowerCase().includes(s)) : state.orders;
-  if(list.length===0) return `<div class="empty-note">Koi order nahi mila.</div>`;
-  return list.map(o=>`
-    <button class="order-item ${o.id===state.selectedOrderId?'sel':''}" onclick="selectOrder('${o.id}')">
-      <div class="top"><span class="oname">${esc(o.name)}</span><span>›</span></div>
-      <div class="omr mono">${esc(o.mrNo)}</div>
-      <div style="margin-top:6px;"><span class="badge ${o.status}">${o.status==='completed'?'✓ Completed':'○ Pending'}</span></div>
-    </button>`).join("");
-}
-
-function selectOrder(id){
+function openOrderResults(id){
   state.selectedOrderId = id;
   state.editMode = false;
-  document.getElementById("order-list").innerHTML = renderOrderListItems();
-  document.getElementById("results-panel").innerHTML = renderResultsPanel();
+  state.view = "results";
+  render();
+}
+
+function renderResultsView(){
+  return `
+  <div style="margin-bottom:12px;">
+    <button class="btn btn-outline" onclick="switchView('history')">← Back to History</button>
+  </div>
+  <div id="results-panel">${renderResultsPanel()}</div>`;
 }
 
 function renderResultsPanel(){
   const order = getSelectedOrder();
-  if(!order) return `<div class="dashed">Order select karein queue se.</div>`;
+  if(!order) return `<div class="dashed">Koi order select nahi hai. History se koi record kholein.</div>`;
   const sections = paramsForOrder(order);
   const allParams = sections.flatMap(s=>s.params);
   const anyEntered = allParams.some(p=> order.results[p.id]!==undefined && order.results[p.id]!=="") || (order.customParams||[]).some(cp=>cp.value && cp.value.trim());
@@ -810,8 +817,6 @@ function markCompleted(orderId){
   persistOrders();
   state.editMode = false;
   document.getElementById("results-panel").innerHTML = renderResultsPanel();
-  document.getElementById("order-list").innerHTML = renderOrderListItems();
-  render(); // refresh queue count in tab
 }
 
 function toggleEditMode(){
@@ -835,14 +840,14 @@ function reprintOrder(id){
 function renderHistoryTableBody(){
   const orders = getHistoryOrders();
   const rows = orders.map(o=>`
-    <tr>
+    <tr onclick="openOrderResults('${o.id}')" style="cursor:pointer;">
       <td>${new Date(o.date).toLocaleDateString()}</td>
       <td class="mono">${esc(o.mrNo)}</td>
       <td>${esc(o.name)}</td>
       <td>${o.age?esc(o.age)+'/':''}${esc(o.gender)}</td>
       <td>${o.categories.map(cid=>catById(cid)?.category).join(", ")}</td>
       <td><span class="badge ${o.status}">${o.status==='completed'?'✓ Completed':'○ Pending'}</span></td>
-      <td>${o.status==='completed' ? `<button class="btn btn-outline" style="padding:5px 10px; font-size:11.5px;" onclick="reprintOrder('${o.id}')">🖶 Print</button>` : ''}</td>
+      <td>${o.status==='completed' ? `<button class="btn btn-outline" style="padding:5px 10px; font-size:11.5px;" onclick="event.stopPropagation(); reprintOrder('${o.id}')">🖶 Print</button>` : ''}</td>
     </tr>`).join("");
   return { rows, count: orders.length };
 }
@@ -852,6 +857,18 @@ function onHistorySearch(v){
   const { rows, count } = renderHistoryTableBody();
   document.getElementById("history-tbody").innerHTML = rows || '<tr><td colspan="7" style="text-align:center; color:var(--muted2);">Koi record nahi mila.</td></tr>';
   document.getElementById("history-count").textContent = count + " record" + (count!==1?"s":"");
+}
+
+function clearHistory(){
+  if(state.orders.length===0){ alert("History pehle se khali hai."); return; }
+  const sure1 = confirm(`Yaqeen hai? Ye ${state.orders.length} record${state.orders.length!==1?'s':''} hamesha ke liye delete ho jayenge. Ye wapas nahi ho sakta.`);
+  if(!sure1) return;
+  const sure2 = confirm("Aakhri confirmation: Sara history data delete kar dein?");
+  if(!sure2) return;
+  state.orders = [];
+  state.selectedOrderId = null;
+  persistOrders();
+  render();
 }
 
 function renderHistory(){
@@ -864,6 +881,7 @@ function renderHistory(){
         <div style="font-size:12px; color:var(--muted2); margin-top:2px;" id="history-count">${count} record${count!==1?'s':''}</div>
       </div>
       <button class="btn btn-outline" onclick="printHistory()">🖶 Print History</button>
+      <button class="btn btn-outline" style="color:#B3261E; border-color:#F2C4C0;" onclick="clearHistory()">🗑 Clear History</button>
     </div>
     <div class="search-wrap" style="max-width:280px; margin-bottom:12px;">
       <span class="search-icon">🔍</span>
@@ -919,7 +937,8 @@ function printReport(){
     let rows = "";
     rows += `<tr><td colspan="${cat.hasUnitsColumn?4:3}" class="rpt-cat-title">${esc(cat.categoryName)}</td></tr>`;
     cat.sections.forEach(sec=>{
-      if(cat.sections.length > 1){
+      const secTitleDiffers = (sec.title||"").trim().toLowerCase() !== (cat.categoryName||"").trim().toLowerCase();
+      if(cat.sections.length > 1 || secTitleDiffers){
         rows += `<tr><td colspan="${cat.hasUnitsColumn?4:3}" class="rpt-sec-title">${esc(sec.title)}</td></tr>`;
       }
       sec.params.forEach(p=>{
@@ -1057,10 +1076,35 @@ function printHistory(){
 }
 
 // ---------------- Init ----------------
-document.querySelector(".brand-icon").innerHTML = `<img src="${PUNJAB_EMBLEM_IMG}" style="width:100%;height:100%;object-fit:contain;">`;
-document.querySelector(".brand-icon").style.background = "#fff";
-document.querySelector(".brand-icon").style.padding = "2px";
+document.querySelectorAll(".brand-icon").forEach(el=>{
+  el.innerHTML = `<img src="${PUNJAB_EMBLEM_IMG}" style="width:100%;height:100%;object-fit:contain;">`;
+  el.style.background = "#fff";
+  el.style.padding = "2px";
+});
 document.getElementById("main").innerHTML = '<div class="dashed">Loading saved records…</div>';
+
+// ---------------- PIN Lock ----------------
+const LOCK_PIN = "03179705364";
+function tryUnlock(){
+  const input = document.getElementById("lock-pin");
+  const errEl = document.getElementById("lock-error");
+  if(input.value === LOCK_PIN){
+    sessionStorage.setItem("lab-unlocked", "1");
+    document.getElementById("lock-screen").style.display = "none";
+    errEl.textContent = "";
+  } else {
+    errEl.textContent = "❌ Ghalat PIN, dobara koshish karein.";
+    input.value = "";
+    input.focus();
+  }
+}
+document.getElementById("lock-pin").addEventListener("keydown", e=>{ if(e.key==="Enter") tryUnlock(); });
+if(sessionStorage.getItem("lab-unlocked") === "1"){
+  document.getElementById("lock-screen").style.display = "none";
+} else {
+  setTimeout(()=> document.getElementById("lock-pin").focus(), 100);
+}
+
 (async function init(){
   await loadOrders();
   if(navigator.storage && navigator.storage.persist){
