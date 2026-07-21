@@ -563,6 +563,20 @@ function onFormInput(){
   if(btn) btn.disabled = !(name && selected.length>0);
 }
 
+function defaultResultsFor(categories){
+  const results = {};
+  TEST_CATALOG.filter(c=>categories.includes(c.id)).forEach(c=>{
+    c.sections.forEach(s=>{
+      s.params.forEach(p=>{
+        if(p.type==="select" && p.normal && p.normal.length){
+          results[p.id] = p.normal[0];
+        }
+      });
+    });
+  });
+  return results;
+}
+
 function createOrder(){
   const name = document.getElementById("f-name").value.trim();
   const selectedCats = TEST_CATALOG.filter(c=>document.getElementById("cat-"+c.id).classList.contains("checked")).map(c=>c.id);
@@ -580,7 +594,7 @@ function createOrder(){
     date: new Date().toISOString(),
     categories: selectedCats,
     status: "pending",
-    results: {},
+    results: defaultResultsFor(selectedCats),
     customParams: []
   };
   state.orders.unshift(order);
@@ -723,7 +737,8 @@ function removeCustomParam(orderId, cid){
 }
 
 function renderParamRow(order, p, locked){
-  const value = order.results[p.id] ?? "";
+  let value = order.results[p.id] ?? "";
+  if(value==="" && p.type==="select" && p.normal && p.normal.length){ value = p.normal[0]; }
   const flag = flagFor(p, value);
   let inputHtml;
   if(p.type==="select"){
@@ -942,7 +957,7 @@ function printReport(){
         rows += `<tr><td colspan="${cat.hasUnitsColumn?4:3}" class="rpt-sec-title">${esc(sec.title)}</td></tr>`;
       }
       sec.params.forEach(p=>{
-        const val = order.results[p.id];
+        const val = order.results[p.id] || (p.type==="select" && p.normal && p.normal.length ? p.normal[0] : undefined);
         const resultCell = val ? esc(val) + (!cat.hasUnitsColumn && p.unit ? ' '+esc(p.unit) : '') : '—';
         rows += `<tr>
           <td style="padding-left:16px;">${esc(p.name)}</td>
@@ -1062,6 +1077,21 @@ function printHistory(){
       <td style="padding:4px 6px;">${o.categories.map(cid=>catById(cid)?.category).join(", ")}</td>
       <td style="padding:4px 6px;">${esc(o.status)}</td>
     </tr>`).join("");
+  const counts = {};
+  orders.forEach(o=>{
+    o.categories.forEach(cid=>{
+      const name = catById(cid)?.category || cid;
+      counts[name] = (counts[name]||0) + 1;
+    });
+  });
+  const summaryItems = Object.entries(counts).sort((a,b)=> b[1]-a[1]);
+  const summaryHtml = summaryItems.length ? `
+    <div style="margin-top:16px; padding-top:10px; border-top:1px solid #333;">
+      <div style="font-weight:700; font-size:13px; margin-bottom:6px;">Test Count Summary</div>
+      <div style="display:flex; flex-wrap:wrap; gap:6px 18px; font-size:12px;">
+        ${summaryItems.map(([name,count])=>`<div><b>${esc(name)}</b>: ${count}</div>`).join("")}
+      </div>
+    </div>` : "";
   const html = `
     ${reportHeaderHtml()}
     <div style="font-weight:700; font-size:14px; margin-bottom:10px;">Patient History Report — All Records (${orders.length} records)</div>
@@ -1069,6 +1099,7 @@ function printHistory(){
       <thead><tr><th>Date</th><th>MR.NO</th><th>Name</th><th>Age/Gender</th><th>Tests</th><th>Status</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
+    ${summaryHtml}
   `;
   document.getElementById("print-report").innerHTML = ""; // clear any leftover single-report print content
   document.getElementById("print-history").innerHTML = html;
