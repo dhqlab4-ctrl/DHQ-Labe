@@ -96,9 +96,11 @@
   /* Print */
   .print-only{display:none;}
   @media print{
+    @page{ size: portrait; margin: 12mm; }
     .no-print{display:none !important;}
     .print-only{display:block !important;}
     body{background:#fff;}
+    .rpt-slide, .rpt-results, .rpt-hdr, .rpt-header{max-width:100%;}
   }
   .rpt-header{display:flex; align-items:center; gap:16px; border-bottom:2px solid #12313B; padding-bottom:10px; margin-bottom:16px;}
   .rpt-logo{width:60px; height:60px; border-radius:50%; border:2px solid #12313B; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px;}
@@ -124,6 +126,12 @@
   .rpt-sig div{border-top:1px solid #111; padding-top:4px; width:180px; font-size:12px; text-align:center;}
   .rpt-comments{margin-top:14px; padding-top:10px; border-top:1px dashed #333; font-size:11.5px; color:#222; white-space:pre-line;}
   .rpt-pagebreak{page-break-after:always;}
+  .rpt-slide{display:block;}
+  .rpt-body{display:block;}
+  .rpt-footer{margin-top:22px;}
+  .rpt-footer-bar{display:flex; background:#5f8a4e; color:#fff; margin-top:24px;}
+  .rpt-footer-bar > div{flex:1; text-align:center; padding:9px 4px; font-size:12px; font-weight:600;}
+  .rpt-disclaimer{font-size:11px; color:#333; text-align:left; margin-top:14px;}
 
   /* ---- PIN Lock Screen ---- */
   #lock-screen{position:fixed; inset:0; z-index:9999; background:var(--bg); display:flex; align-items:center; justify-content:center; flex-direction:column;}
@@ -267,6 +275,26 @@ const TEST_CATALOG = [
         { id:"el_na", name:"Sodium", type:"numeric", unit:"mmol/L", low:135, high:145, ref:"135 - 145" },
         { id:"el_k", name:"Potassium", type:"numeric", unit:"mmol/L", low:3.5, high:5.5, ref:"3.5 - 5.5" },
         { id:"el_cl", name:"Chloride", type:"numeric", unit:"mmol/L", low:98, high:108, ref:"98 – 108" }
+      ]}
+    ]},
+
+  { id:"uric_acid", category:"Serum Uric Acid", hasUnitsColumn:true, printGroupLabel:"Chemistry", sections:[
+    { title:"CHEMISTRY", params:[
+      { id:"ua_val", name:"Serum Uric Acid", type:"numeric", unit:"mg/dl", low:3.5, high:7.26, ref:"Male:  3.5 – 7.26\nFemale: 2.6 –6.0" }
+    ]}
+  ]},
+
+  { id:"lft_rft_basic", category:"Liver & Renal Function Test", hasUnitsColumn:true, printGroupLabel:"Chemistry",
+    sections:[
+      { title:"LIVER PROFILE", params:[
+        { id:"lrb_alt", name:"ALT (SGPT)", type:"numeric", unit:"U/L", low:0, high:45, ref:"< 45" },
+        { id:"lrb_bili", name:"TOTAL BILIRUBIN", type:"numeric", unit:"mg/dl", low:0, high:1.2, ref:"Adult up to 1.2mg/dl" },
+        { id:"lrb_ast", name:"AST", type:"numeric", unit:"U/L", low:0, high:35, ref:"<35" }
+      ]},
+      { title:"RENAL FUNCTION TEST", params:[
+        { id:"lrb_urea", name:"Blood Urea", type:"numeric", unit:"mg/dl", low:10, high:50, ref:"10 - 50 mg/dl" },
+        { id:"lrb_creat", name:"Serum Creatinine", type:"numeric", unit:"mg/dl", low:0.6, high:1.5, ref:"0.6 - 1.5mg/dl" },
+        { id:"lrb_glu", name:"Glucose Random", type:"numeric", unit:"mg/dl", low:0, high:200, ref:"<200mg/d" }
       ]}
     ]},
 
@@ -942,6 +970,15 @@ function patientBlockHtml(order, dateStr){
   </div>`;
 }
 
+function footerHtml(){
+  return `<div class="rpt-footer">
+    <div class="rpt-footer-bar">
+      <div>IBDH ATTOCK</div><div>IBDH ATTOCK</div><div>IBDH ATTOCK</div><div>IBDH ATTOCK</div>
+    </div>
+    <div class="rpt-disclaimer">This is a computer generated report, hence does not require signature.</div>
+  </div>`;
+}
+
 function printReport(){
   const order = getSelectedOrder();
   if(!order) return;
@@ -972,13 +1009,16 @@ function printReport(){
       : `<th>Test Name</th><th>Patient Result</th><th>Reference Range</th>`;
     return `
       <div class="rpt-slide">
-        ${reportHeaderHtml()}
-        ${patientBlockHtml(order, dateStr)}
-        <table class="rpt-results">
-          <thead><tr>${headCols}</tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-        ${cat.comments ? `<div class="rpt-comments">Comments: ${esc(cat.comments)}</div>` : ''}
+        <div class="rpt-body">
+          ${reportHeaderHtml()}
+          ${patientBlockHtml(order, dateStr)}
+          <table class="rpt-results">
+            <thead><tr>${headCols}</tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          ${cat.comments ? `<div class="rpt-comments">Comments: ${esc(cat.comments)}</div>` : ''}
+        </div>
+        ${footerHtml()}
       </div>
       ${idx < grouped.length-1 ? '<div class="rpt-pagebreak"></div>' : ''}
     `;
@@ -996,12 +1036,15 @@ function printReport(){
     customSlide = `
       <div class="rpt-pagebreak"></div>
       <div class="rpt-slide">
-        ${reportHeaderHtml()}
-        ${patientBlockHtml(order, dateStr)}
-        <table class="rpt-results">
-          <thead><tr><th>Test Name</th><th>Patient Result</th><th>Reference Range</th></tr></thead>
-          <tbody><tr><td colspan="3" class="rpt-cat-title">Additional / Custom Tests</td></tr>${rows}</tbody>
-        </table>
+        <div class="rpt-body">
+          ${reportHeaderHtml()}
+          ${patientBlockHtml(order, dateStr)}
+          <table class="rpt-results">
+            <thead><tr><th>Test Name</th><th>Patient Result</th><th>Reference Range</th></tr></thead>
+            <tbody><tr><td colspan="3" class="rpt-cat-title">Additional / Custom Tests</td></tr>${rows}</tbody>
+          </table>
+        </div>
+        ${footerHtml()}
       </div>`;
   }
 
