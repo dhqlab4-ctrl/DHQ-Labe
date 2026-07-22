@@ -207,9 +207,10 @@ const TEST_CATALOG = [
     ]},
     { title:"(Urine Microscopic Examination)", params:[
       { id:"u_pus", name:"Pus Cell", type:"text", unit:"/HPF", ref:"00 - 05/ HPF" },
-      { id:"u_rbc", name:"Red Blood Cells", type:"text", unit:"/HPF", ref:"Nil /HPF" },
-      { id:"u_epi", name:"Epithelial Cell", type:"text", unit:"/HPF", ref:"Nil/HPF" },
-      { id:"u_cal", name:"Cal Oxalate", type:"select", options:["Nil","Present"], normal:["Nil"], ref:"Nil" },
+      { id:"u_rbc", name:"Red Blood Cells", type:"text", unit:"/HPF", ref:"Nil /HPF", default:"Nil" },
+      { id:"u_epi", name:"Epithelial Cell", type:"text", unit:"/HPF", ref:"Nil/HPF", default:"Nil" },
+      { id:"u_cast", name:"Cast", type:"select", options:["Nil","Present"], normal:["Nil"], ref:"Nil" },
+      { id:"u_cal", name:"Crystals", type:"select", options:["Nil","Present"], normal:["Nil"], ref:"Nil" },
       { id:"u_bac", name:"Bacteria", type:"select", options:["Nil","Few","Present","Many"], normal:["Nil"], ref:"Nil" }
     ]}
   ]},
@@ -598,6 +599,9 @@ function defaultResultsFor(categories){
       s.params.forEach(p=>{
         if(p.type==="select" && p.normal && p.normal.length){
           results[p.id] = p.normal[0];
+        }
+        if(p.type==="text" && p.default){
+          results[p.id] = p.default;
         }
       });
     });
